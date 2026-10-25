@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://t.me/petegroup"><img alt="Telegram" src="https://img.shields.io/badge/Telegram-@petegroup-26A5E4?logo=telegram&logoColor=white"></a>
+</p>
+
 # UniXNU ishtar
 
 Device support for Xiaomi 13 Ultra, codename `ishtar`, with Qualcomm SM8550.
