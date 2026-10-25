@@ -55,15 +55,10 @@ paths = ["patches/xnu/**", "dts/ishtar.dts", "configs/**"]
 inputs = ["SM8550 CPU affinities, GIC distributor and redistributor ranges and the 19.2 MHz timer, all from the shared SoC source.", "Board CPU selection and enablement in dts/ishtar.dts."]
 configuration = ["CONFIG_XNU_ARMCPU=y and CONFIG_XNU_ARM_DT_PLATFORM=y in the board defconfig.", "kernel_args select sheng-smp=1 and armcpu-spi-ipi=1, matching the shared platform's inter-processor interrupt path.", "dts/ishtar.dts includes sm8550.dtsi and overrides only board-level nodes."]
 procedure = ["Compile the board DTS with the shared SoC include path and inspect the enabled CPUs, GIC ranges and timer properties in the generated ADT.", "Record per-CPU entry, timer interrupts and inter-processor interrupt delivery."]
-findings = ["CPU affinity values are hardware identifiers read from the firmware, not logical indices; the enabled CPU count and the MPIDR affinities have to be checked together or secondary cores enter at the wrong offset.", "The board patch 0001-arm64-cpu-init-read-cpuid-on-every-cpu.patch makes arm64 CPU init read the CPU ID on every CPU instead of reusing the boot CPU's value, which is required because the firmware does not guarantee the boot CPU is the one that first runs the shared init path.", "GIC register ranges must be translated physical addresses from the hardware tree; the raw SoC addresses are not valid once the firmware remaps them."]
+findings = ["CPU affinity values are hardware identifiers read from the firmware, not logical indices; the enabled CPU count and the MPIDR affinities have to be checked together or secondary cores enter at the wrong offset.", "cpu_init() reaches the architecture switch through cpuid_info(), which returns the single global cpuid_cpu_info that do_cpuid() fills once on the boot CPU and stamps with CPU_ARCH_ARMv8, so a secondary CPU already sees a known architecture and never enters the panic arm; the board patch that called do_cpuid() per CPU was removed as redundant and as a write into a section that is read-only after the late lockdown.", "GIC register ranges must be translated physical addresses from the hardware tree; the raw SoC addresses are not valid once the firmware remaps them."]
 completion = ["Every enabled CPU reaches its entry checkpoint and timer and inter-processor interrupt handling works on each enabled CPU."]
-limits = ["CPU entry has not been observed on ishtar hardware; this area is implemented and host-verified only by the DTS compiling and the patch applying.", "CPU frequency policy is inherited from the sheng kit and has not been retuned for ishtar thermal limits."]
+limits = ["CPU entry has not been observed on ishtar hardware; this area is implemented and host-verified only by the board DTS compiling.", "CPU frequency policy is inherited from the sheng kit and has not been retuned for ishtar thermal limits."]
 next_action = ["Record per-CPU entry and the secondary-core MPIDR values on the first device boot."]
-
-[[area.evidence]]
-kind = "source"
-reference = "patches/xnu/0001-arm64-cpu-init-read-cpuid-on-every-cpu.patch"
-result = "Board patch that reads the CPU ID on every CPU during arm64 CPU init"
 
 [[area.evidence]]
 kind = "source"
