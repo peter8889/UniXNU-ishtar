@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/dts-v1/;
+/include/ "sm8550.dtsi"
+
+/ {
+    model = "Xiaomi 13 Ultra";
+    compatible = "xiaomi,ishtar", "qcom,sm8550";
+
+    memory@80000000 {
+        device_type = "memory";
+        /* 8 GiB, deliberately under the physical size: nuwa (9 GiB on a 12 GB
+         * phone) and Pagani (6 GiB) both declare less than the fitted DRAM, and
+         * declaring more than exists lets the physmap and the page-table
+         * allocator reach addresses that no DRAM backs. The size needs two
+         * cells; a single 0x200000000 literal is truncated by dtc. */
+        reg = <0 0x80000000 0x2 0x0>;
+    };
+
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+        splash_region: framebuffer@b8000000 {
+            label = "cont_splash_region";
+            reg = <0 0xb8000000 0 0x2b00000>;
+            no-map;
+        };
+    };
+};
+
+&ufs { status = "okay"; };
+&ufsphy { status = "okay"; };
+&gpu { status = "okay"; };
+&gmu { status = "okay"; };
+&gpu_smmu { status = "okay"; };

@@ -1,9 +1,9 @@
 "schema_version" = 2
 
 ["board"]
-"name" = "sheng"
+"name" = "ishtar"
 "soc" = "SM8550"
-"description" = "Xiaomi Pad 6S Pro"
+"description" = "Xiaomi 13 Ultra"
 "kit" = "sheng"
 "soc_source" = "sm8550"
 "os_profile" = "ipados-17.7.11-21H461"
@@ -17,7 +17,7 @@
 
 
 ["kernel"]
-"defconfig" = "sheng_defconfig"
+"defconfig" = "gpu_defconfig"
 "archives" = [
   "build-corecrypto-14.py",
   "build-corecrypto-14.py --namespace",
@@ -26,67 +26,55 @@
   "component:SoftwareAES",
   "build-software-aes-bindings.py",
   "component:ShengUfs",
-  "component:VirtioMmioBlock",
-  "component:RamBlock",
-  "build-virtio-mmio-bindings.py --component RamBlock --directory build/ram-block",
-  "build-virtio-mmio-bindings.py --component VirtioMmioBlock",
-  "build-mockfs-fixture.py",
-  "build-sheng-platform-power.py",
-  "build-boot-progress.py",
-  "build-libpthread-kernel.py",
+  "fetch-adreno-inputs.py",
+  "fetch-sheng-dts.py",
+  "prepare-sheng-gmu.py",
+  "prepare-sheng-gmu-votes.py",
+  "prepare-sheng-command-db-oracle.py",
+  "derive-a740-hwinit.py",
+  "derive-a740-pwrup.py",
   "component:Adreno740",
   "build-adreno740-kits.py",
-  "build-adreno740-accelerator.py",
-  "component:ShengHidInput",
-  "component:AppleKeyStoreState",
-  "build-gop-legacy-display.py",
+  "build-adreno-link-stubs.py",
+  # build-adreno740-accelerator.py needs drivers/AdrenoMetal/OriginalAcceleratorABI.h (payload-stage AdrenoMetal
+  # component); the kernel link has no accelerator archive variable, so it is not part of the kernel build.
 ]
 "config_fragments" = ["arch:configs/common.config", "soc:configs/sm8550.config", "os:configs/ipados.config"]
 "patch_series" = ["arch:patches/xnu/series", "soc:patches/xnu/series", "os:patches/xnu/series", "device:patches/xnu/series"]
 
 
 ["firmware"]
-"config" = "sheng"
-"dsc" = "Platforms/Xiaomi/shengPkg/sheng.dsc"
-"fd" = "Build/shengPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd"
-"preflight" = ["scripts/check-sheng.py"]
+"config" = "ishtar"
+"dsc" = "Platforms/Xiaomi/ishtarPkg/ishtar.dsc"
+"fd" = "Build/ishtarPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd"
+"preflight" = []
 "submodules" = ["Common/Mu", "Common/Mu_OEM_Sample", "Silicium-ACPI", "Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl"]
 "patches" = ["Resources/MuPatches/Gic-Spurious.patch"]
 "packages" = ["{uefi}", "{uefi}/Platforms/Xiaomi", "{tree}/package", "{tree}/drivers/DarwinBoot", "{edk2}", "{uefi}/Common/Mu", "{uefi}/Common/Mu_OEM_Sample", "{uefi}/Silicon/Qualcomm", "{uefi}/Silicon/Silicium", "{uefi}/Silicium-ACPI", "{uefi}/Silicium-ACPI/Platforms/Xiaomi", "{uefi}/Silicium-ACPI/Silicon/Qualcomm"]
 
 ["firmware"."defines"]
 "ENABLE_SECUREBOOT" = "1"
-"DEVICE_MODEL" = "sheng"
+"DEVICE_MODEL" = "ishtar"
 "MEMORY_PROTECTION" = "TRUE"
 "SHIP_MODE" = "FALSE"
-"BUILDID_STRING" = "sheng-research"
+"BUILDID_STRING" = "ishtar-research"
 
 
 
 ["payload"]
-"volume" = "SHENGESP"
-"size_mib" = 208
+"volume" = "ISHTARESP"
+"size_mib" = 54
 "loader" = "firmware"
-"title" = "Boot"
-"dram_size" = "0x80000000"
-"skip_setup_tool" = "scripts/seed-data-skip-setup.py"
+"title" = "Boot iPadOS"
+"dram_size" = "0x200000000"
 "panic_screen" = true
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "offline-legacy-register=1", "offline-legacy-gop=1", "offline-legacy-unit-scale=2", "offline-legacy-pm=1", "offline-legacy-validate=1", "offline-legacy-transfer=1", "offline-legacy-cpu-present=1", "offline-hid-home=1", "offline-hid-input=1", "offline-legacy-phase=4", "offline-mobile-graphics-client=1", "offline-mobile-graphics-load=1", "offline-apfs-load=1", "boot-progress=2", "-apfs_shared_datavolume", "offline-key-events=1", "native-ufs-root=1", "sheng-pmgr=2", "sheng-disable-watchdogd=1", "sheng-lite=1", "boot-ui-focus4=SpringBoard", "sheng-smp=1", "sheng-cpufreq=3", "sheng-touch=4", "sheng-aks=1", "sheng-gpu-power=9", "sheng-gpu-metal=1", "sheng-fb-gpu=1", "sheng-banner=0", "sheng-gpu-perf=8", "sheng-gpu-addon=1", "armcpu-spi-ipi=1", "-no_slto_panic", "ml-timeout-lock-panic-scale=40", "sheng-touch-hid=1", "sheng-data-persist=2", "sheng-staged-apps=1", "sheng-buttons=1", "sheng-backlight=1", "sheng-vsync=120"]
-
-["payload"."install"]
-"title" = "Install and boot"
-"confirm" = "ERASE all iPadOS user data and install again?"
-"confirm_titles" = ["Erase Data, skip Hello, boot", "Erase Data, show Hello, boot"]
-"confirm_args" = ["sheng-data-reset=1", "sheng-data-reset=2"]
+"panic_framebuffer" = { base = "0xb8000000", width = 1440, height = 3200, stride = 5760 }
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "offline-legacy-register=1", "offline-legacy-gop=1", "offline-legacy-unit-scale=2", "offline-legacy-pm=1", "offline-legacy-validate=1", "offline-legacy-transfer=1", "offline-legacy-cpu-present=1", "offline-hid-home=1", "offline-hid-input=1", "offline-legacy-phase=4", "offline-mobile-graphics-client=1", "offline-mobile-graphics-load=1", "offline-apfs-load=1", "boot-progress=2", "-apfs_shared_datavolume", "offline-key-events=1", "sheng-disable-watchdogd=1", "sheng-lite=1", "boot-ui-focus4=SpringBoard", "sheng-smp=1", "sheng-cpufreq=3", "sheng-gpu-power=9", "sheng-gpu-metal=1", "sheng-banner=0", "sheng-gpu-perf=8", "armcpu-spi-ipi=1", "-no_slto_panic", "ml-timeout-lock-panic-scale=40", "sheng-touch-hid=1"]
 
 
 ["payload"."adt"]
 "chip_id" = "207"
 "owned_memory_size" = "0x130000000"
-"root_match_volume_uuid" = "04769D26-2CA0-4825-B443-E2E5F88300F2"
-"packed_data_ramdisk" = true
-"persistent_data" = true
-"unique_chip_id" = "required"
 
 
 
@@ -95,12 +83,20 @@
 
 
 ["device_tree"]
-"source" = "device:dts/sheng.dts"
+"source" = "device:dts/ishtar.dts"
 "include_dirs" = ["soc:dts"]
 
 
 ["components"]
-"include" = ["ArmDTPlatform", "ArmCpu", "SoftwareAES", "ShengUfs", "VirtioMmioBlock", "RamBlock", "Adreno740", "AdrenoMetal", "GopFramebuffer", "ShengHidInput", "ShengNovatekTouch", "QcomGeniSpi", "AppleKeyStoreState", "XnuPrelink", "DarwinBoot", "VerifiedRoot", "ShengPreflight", "AirNir", "Ath12kWifi"]
+"include" = [
+  "ArmDTPlatform",
+  "ArmCpu",
+  "SoftwareAES",
+  "ShengUfs",
+  "Adreno740",
+  "XnuPrelink",
+  "DarwinBoot",
+]
 
 
 ["adt"]
@@ -108,7 +104,7 @@
 ["adt"."product"]
 
 ["adt"."product"."string"]
-"model" = "xiaomi,sheng"
+"model" = "xiaomi,ishtar"
 "artwork-display-gamut" = "sRGB"
 
 
