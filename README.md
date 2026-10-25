@@ -123,6 +123,13 @@ The documentation site is maintained in UniXNU:
 Report build results and device boot, storage, display, input, and GPU
 observations separately, with source revisions and commands.
 
+## Contact
+
+Port discussion happens in the Telegram group [@petegroup](https://t.me/petegroup).
+Build results, boot checkpoints and hardware observations still belong in
+`porting.toml` and the issue tracker, because the group is a conversation
+channel rather than a record.
+
 ## Local build inputs
 
 Save device paths and boot arguments in `unixnu.local.toml` in the UniXNU
