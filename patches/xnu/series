@@ -1,1 +1,2 @@
 # Board patch paths, one per line in application order.
+0001-arm64-cpu-init-read-cpuid-on-every-cpu.patch
