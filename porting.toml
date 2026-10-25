@@ -1,260 +1,261 @@
 schema_version = 1
 
 [device]
-name = "sheng"
+name = "ishtar"
 soc = "SM8550"
 os_profile = "ipados-17.7.11-21H461"
-summary = "Xiaomi Pad 6S Pro 12.4 uses shared SM8550 support and board-owned storage, input, firmware and power integration. This record describes implementation coverage and the evidence required for each milestone."
+summary = "Xiaomi 13 Ultra (ishtar) reuses shared SM8550 support and the sheng kit, and owns its board tree, partition geometry, firmware package and payload policy. This record states what is implemented, what is only configured, and what has not been observed on hardware."
 
 [[area]]
 id = "configuration"
 status = "implemented"
 components = []
-paths = ["board.toml", "feeds.toml", "configs/**", ".gitmodules", ".github/**", ".gitignore"]
-inputs = ["SM8550 profile, iPadOS 17.7.11 build 21H461, device defconfig, pinned component sources."]
-configuration = ["board.soc_source = sm8550; board.os_profile = ipados-17.7.11-21H461; schema_version = 2.", "The device owns ShengUfs, ShengHidInput, ShengNovatekTouch and ShengPreflight submodules."]
-procedure = ["Read https://unixnu.com/porting/device-repository and https://unixnu.com/porting/records.", "Run ./unixnu defconfig sheng_defconfig -D ../UniXNU-sheng from UniXNU.", "Run ./unixnu status --json -D ../UniXNU-sheng and review profiles, components, source pins and patch order."]
-findings = ["Tables merge in ARM64, SoC, OS, device order. Arrays replace inherited selections, so include every required component and fragment.", "The selected defconfig applies after the explicit configuration fragments. Keep OS ABI and IPSW pins in the OS profile."]
-completion = ["All source pins resolve; every selected component has a record; status shows the intended overrides and patch order."]
-limits = ["Local overrides can select a different source from the published pin; record the effective source in each verification result."]
-next_action = ["Compare the effective status output whenever a profile, source or component selection changes."]
+paths = ["board.toml", "feeds.toml", "configs/**", "dts/**", "patches/**", ".github/**"]
+inputs = ["SM8550 shared source pinned in feeds.toml at 23b2049fcd9e30356161def84231334fb55ecca9.", "iPadOS 17.7.11 build 21H461 OS profile.", "Board identity xiaomi,ishtar and the sheng kit reused unchanged."]
+configuration = ["board.schema_version = 2; board.name = ishtar; board.soc = SM8550; board.kit = sheng; board.os_profile = ipados-17.7.11-21H461.", "kernel.defconfig = sheng_defconfig; config_fragments apply arch, soc then os, and the device defconfig applies last.", "kernel.patch_series is arch, soc, os then device, so a board patch cannot be shadowed by a shared one."]
+procedure = ["Run ./unixnu defconfig sheng_defconfig -D ../UniXNU-ishtar from UniXNU.", "Run ./unixnu status --json -D ../UniXNU-ishtar and confirm profiles resolve in ARM64, SoC, OS, device order.", "Run ./unixnu tree -D ../UniXNU-ishtar and confirm kits/sheng is selected and the device package lands in tree/package."]
+findings = ["The board reuses kit sheng because the package scripts, ADT generator and archive plan are shared with the SM8550 reference board; only board.toml values and the device tree differ.", "Arrays replace inherited selections rather than extending them, so kernel.archives lists every archive the link needs even though most entries come from sheng.", "Three defconfigs exist for different purposes: sheng_defconfig carries the board build, gpu_defconfig enables CONFIG_XNU_BOOT_PROGRESS, bringup_defconfig disables every optional component for early entry debugging."]
+completion = ["All source pins resolve, status reports the intended overrides, and tree/ contains the device package plus the shared scripts."]
+limits = ["The board does not yet carry its own kit; it inherits sheng's. A divergent board package would need kits/ishtar and a board.kit change.", "gpu_defconfig currently leaves CONFIG_XNU_NATIVE_UFS, CONFIG_XNU_NATIVE_LEGACY_DISPLAY and CONFIG_XNU_NATIVE_MOBILE_DISPLAY disabled."]
+next_action = ["Split the board-specific package code out of kit sheng once the bring-up stabilises, so the ishtar tree stops depending on sheng's file layout."]
 
 [[area.evidence]]
 kind = "source"
 reference = "board.toml"
-result = "Implementation and configuration described in this section"
+result = "Board identity, partition geometry, archive order, firmware package, payload policy and ADT overrides"
+
+[[area.evidence]]
+kind = "source"
+reference = "feeds.toml"
+result = "SM8550 shared source pinned to a full commit"
 
 [[area]]
 id = "firmware"
 status = "implemented"
-components = ["ShengPreflight"]
-paths = ["proprietary-files.txt", "scripts/extract-files.py", "scripts/gen-touch-firmware.py"]
-inputs = ["uefi-sheng firmware, stock firmware DTB, GOP handoff, PSCI SMC interface and vendor firmware inventory."]
-configuration = ["firmware.dsc = Platforms/Xiaomi/shengPkg/sheng.dsc; firmware.config = sheng.", "proprietary-files.txt records input paths and provenance.", "The firmware DSC and FDF embed UniXNU, UniXNUDxe, DarwinBoot, UniXNURamDiskDxe, DiskIoDxe and FAT support."]
-procedure = ["Run ./unixnu build firmware -D ../UniXNU-sheng --uefi ../uefi-sheng.", "Record the firmware commit, output FD and handoff memory map before a boot attempt.", "Build the payload, then run ./unixnu bootimg with the firmware DTB. Inspect boot.json ramdisk_bytes and the required firmware modules."]
-findings = ["The firmware DTB is an input to boot-image assembly. XNU consumes the separately generated ADT.", "The sheng preflight component belongs with board integration and its firmware requirements.", "The shared UniXNURamDiskDxe reads the Mu-Silicium entry-argument HOB and FDT initrd range to publish the payload block device. ShengBootMemoryDxe owns memory expansion.", "Configured menu entries require a payload FAT filesystem containing EFI/UniXNU/unixnu.toml. Check the UNIXNURAMDISK initrd block-device status when entries are absent."]
-completion = ["Firmware image builds, enters UniXNU, publishes the framebuffer and preserves the documented memory reservations."]
-limits = ["Boot-image assembly requires the selected firmware DTB and proprietary input files."]
-next_action = ["Capture firmware revision and memory reservations with the next image verification."]
+components = []
+paths = ["board.toml", "proprietary-files.txt", "scripts/extract-files.py", "scripts/build-uefi-sheng.sh"]
+inputs = ["ishtarPkg under uefi-sheng Platforms/Xiaomi, built from the sheng firmware tree.", "Stock ishtar firmware DTB for the boot-image step.", "Vendor firmware inventory in proprietary-files.txt, fetched from the recorded upstream commit."]
+configuration = ["firmware.config = ishtar; firmware.dsc = Platforms/Xiaomi/ishtarPkg/ishtar.dsc; firmware.fd = Build/ishtarPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd.", "firmware.defines sets DEVICE_MODEL = ishtar, ENABLE_SECUREBOOT = 1, MEMORY_PROTECTION = TRUE and SHIP_MODE = FALSE.", "firmware.patches applies Resources/MuPatches/Gic-Spurious.patch, shared with the SM8550 reference board."]
+procedure = ["Run ./unixnu firmware -D ../UniXNU-ishtar --uefi ../uefi-sheng.", "Record the firmware commit, the produced FD path and the handoff memory map before any boot attempt.", "Build the payload, then assemble the boot image with the firmware DTB and inspect boot.json for ramdisk_bytes and dtb_appended."]
+findings = ["The firmware package name and the device model are both ishtar, so the DSC, the FD path and the ADT product string must agree or the image builds under the wrong identity.", "The firmware DTB is an input to boot-image assembly only; XNU consumes the separately generated ADT, which is why device-tree and ADT values are maintained in different places.", "proprietary-files.txt fetches from a recorded upstream commit so the firmware inventory is reproducible without a local vendor dump."]
+completion = ["The firmware FD builds, enters UniXNU, publishes the framebuffer and preserves the documented memory reservations."]
+limits = ["The firmware tree is uefi-sheng, not a dedicated uefi-ishtar repository; ishtarPkg lives inside it.", "No firmware revision or handoff memory map has been recorded from a device boot yet."]
+next_action = ["Capture the firmware revision, the FD size and the handoff memory map on the first successful device boot."]
 
 [[area.evidence]]
 kind = "source"
 reference = "proprietary-files.txt"
-result = "Implementation and configuration described in this section"
-
-[[area.evidence]]
-kind = "source"
-reference = "https://github.com/UniXNU/UniXNU/blob/8d157ee18ae9c4d518aba28cb3040a84e860dcd1/package/UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.c"
-result = "Shared FDT initrd block-device publication; board memory policy remains in uefi-sheng."
+result = "Firmware inventory with upstream commit and per-file SHA-256 digests"
 
 [[area]]
 id = "cpu"
 status = "implemented"
 components = ["ArmCpu", "ArmDTPlatform"]
-paths = ["package/CpuFreq*", "scripts/*armcpu*"]
-inputs = ["SM8550 CPU affinities, GIC distributor at 0x17100000, redistributors at 0x17180000, 0x40000 stride and 19.2 MHz timer.", "PSCI uses SMC. The board disables cpu1 and cpu2 in its DTS."]
-configuration = ["dts/sheng.dts includes sm8550.dtsi; shared CPU and interrupt definitions come from the SoC source.", "Kernel arguments select sheng-smp=1 and armcpu-spi-ipi=1."]
-procedure = ["Compile the board DTS and inspect enabled CPUs, GIC ranges and timer properties in the ADT.", "Record per-CPU entry, timer interrupts and inter-processor interrupt delivery."]
-findings = ["CPU affinity values are hardware identifiers. Enabled CPU count and MPIDR affinities must be checked together.", "GIC register ranges must use translated physical addresses from the hardware tree."]
-completion = ["Every enabled CPU reaches its entry checkpoint and timer/IPI handling works on each enabled CPU."]
-limits = ["CPU selection and frequency policy are board inputs; SoC topology describes all cores."]
-next_action = ["Attach per-CPU and interrupt observations for the selected firmware and image."]
+paths = ["patches/xnu/**", "dts/ishtar.dts", "configs/**"]
+inputs = ["SM8550 CPU affinities, GIC distributor and redistributor ranges and the 19.2 MHz timer, all from the shared SoC source.", "Board CPU selection and enablement in dts/ishtar.dts."]
+configuration = ["CONFIG_XNU_ARMCPU=y and CONFIG_XNU_ARM_DT_PLATFORM=y in the board defconfig.", "kernel_args select sheng-smp=1 and armcpu-spi-ipi=1, matching the shared platform's inter-processor interrupt path.", "dts/ishtar.dts includes sm8550.dtsi and overrides only board-level nodes."]
+procedure = ["Compile the board DTS with the shared SoC include path and inspect the enabled CPUs, GIC ranges and timer properties in the generated ADT.", "Record per-CPU entry, timer interrupts and inter-processor interrupt delivery."]
+findings = ["CPU affinity values are hardware identifiers read from the firmware, not logical indices; the enabled CPU count and the MPIDR affinities have to be checked together or secondary cores enter at the wrong offset.", "The board patch 0001-arm64-cpu-init-read-cpuid-on-every-cpu.patch makes arm64 CPU init read the CPU ID on every CPU instead of reusing the boot CPU's value, which is required because the firmware does not guarantee the boot CPU is the one that first runs the shared init path.", "GIC register ranges must be translated physical addresses from the hardware tree; the raw SoC addresses are not valid once the firmware remaps them."]
+completion = ["Every enabled CPU reaches its entry checkpoint and timer and inter-processor interrupt handling works on each enabled CPU."]
+limits = ["CPU entry has not been observed on ishtar hardware; this area is implemented and host-verified only by the DTS compiling and the patch applying.", "CPU frequency policy is inherited from the sheng kit and has not been retuned for ishtar thermal limits."]
+next_action = ["Record per-CPU entry and the secondary-core MPIDR values on the first device boot."]
 
 [[area.evidence]]
 kind = "source"
-reference = "dts/sheng.dts"
-result = "Implementation and configuration described in this section"
+reference = "patches/xnu/0001-arm64-cpu-init-read-cpuid-on-every-cpu.patch"
+result = "Board patch that reads the CPU ID on every CPU during arm64 CPU init"
+
+[[area.evidence]]
+kind = "source"
+reference = "dts/ishtar.dts"
+result = "Board device tree including the shared SM8550 description"
 
 [[area]]
 id = "memory"
 status = "implemented"
 components = []
-paths = ["dts/**", "package/*Smmu*", "package/*Memory*", "scripts/*smmu*", "scripts/*memory*"]
-inputs = ["Handoff DRAM at 0x80000000 with size 0x80000000; splash reservation at 0xb8000000 with size 0x2b00000.", "Payload owned-memory request is 0x130000000. Device DMA requires controller stream IDs, address widths and ownership."]
-configuration = ["device_tree.source = device:dts/sheng.dts; include_dirs = [soc:dts].", "payload.adt.owned_memory_size and firmware reservations describe separate allocations."]
-procedure = ["Compare firmware RAM ranges, reserved regions, DTS ranges and ADT memory-map entries.", "Check DMA buffers against controller address width, cache policy and SMMU mapping before submitting work."]
-findings = ["Physical register translation and CPU virtual mappings have different purposes. Preserve physical resource ranges in hardware descriptions.", "GPU and UFS use different SMMU instances and stream assignments."]
-completion = ["All handoff regions are accounted for and each enabled DMA engine accesses its allocated range with the documented cache policy."]
-limits = ["The DTS declares the current handoff window and splash region; memory sizing requires the selected firmware map."]
-next_action = ["Record the firmware memory map and each DMA consumer when changing reserved memory."]
+paths = ["dts/ishtar.dts", "board.toml"]
+inputs = ["8 GiB declared DRAM at 0x80000000.", "Splash framebuffer reserved region at 0xb8000000, size 0x2b00000.", "Payload DRAM size and owned memory size recorded in board.toml."]
+configuration = ["dts/ishtar.dts declares memory@80000000 with reg = <0 0x80000000 0x2 0x0>, which needs two size cells because a single 0x200000000 literal is truncated by dtc.", "reserved-memory/splash_region is labelled cont_splash_region and marked no-map so the kernel never allocates over the firmware's framebuffer.", "payload.dram_size = 0x200000000; payload.adt.owned_memory_size = 0x130000000."]
+procedure = ["Compile the board DTS and confirm the memory node size is 0x200000000 rather than a truncated value.", "Inspect the generated ADT for the owned memory size and the reserved region list before assembling the payload."]
+findings = ["Declaring less DRAM than the phone physically has is deliberate: the physmap and the page-table allocator will otherwise reach addresses no DRAM backs. The SM8550 reference boards declare less than the fitted DRAM for the same reason.", "The reserved splash region must stay no-map. Mapping it as normal memory lets the page-table allocator hand out the framebuffer and the firmware's splash output disappears.", "The size cell count is the single easiest value to get silently wrong; dtc truncates a 64-bit literal in a one-cell property without failing."]
+completion = ["The ADT reports the intended DRAM and owned memory sizes and the reserved splash region appears in the handoff list."]
+limits = ["Memory has not been validated on hardware; the declared size follows the reference board policy rather than a measurement of this unit.", "SMMU and DMA address-translation ownership is not configured for this board."]
+next_action = ["Compare the ADT memory description against the firmware's memory map on the first device boot."]
 
 [[area.evidence]]
 kind = "source"
-reference = "dts/sheng.dts"
-result = "Implementation and configuration described in this section"
+reference = "dts/ishtar.dts"
+result = "Declared DRAM size and the reserved splash framebuffer region"
 
 [[area]]
 id = "storage"
-status = "implemented"
-components = ["ShengUfs", "VirtioMmioBlock", "RamBlock", "VerifiedRoot"]
-paths = ["drivers/ShengUfs", "scripts/*ufs*", "scripts/*storage*", "scripts/*userdata*", "scripts/*root*"]
-inputs = ["UFS host 0x01d84000/0x3000; PHY 0x01d80000/0x2000; GCC base 0x00100000.", "GCC AXI, AHB, UniPro, symbol and PHY auxiliary branches; power domains and firmware link state.", "Apps SMMU at 0x15000000, UFS stream 0x60, context-bank ownership, DMA width and cache maintenance.", "LUN 0 uses 4096-byte blocks; userdata spans LBAs 3094592 through 64007162."]
-configuration = ["Select ShengUfs and CONFIG_XNU_NATIVE_UFS=y; native-ufs-root=1 enables the root path.", "userdata defines OS and SystemOS windows. payload.adt.root_match_volume_uuid = 04769D26-2CA0-4825-B443-E2E5F88300F2."]
-procedure = ["Read https://unixnu.com/porting/ufs with this storage record.", "Inspect clock enables, power state, HCE/HCS, link state, request-list base and SMMU mappings before changing controller ownership.", "Validate SCSI capacity and GPT reads, then publish root windows and mount the configured root UUID.", "Verify persistent Data writes on the documented Data allocation with a recovery image available."]
-findings = ["An idle AHB branch may report CLK_OFF with hardware gating enabled. Check enable and gating bits together.", "SMMU bypass still has address-width constraints. Validate every DMA range and context-bank assignment.", "ShengUfs contains controller access, GPT/window parsing and sheng Data/log policy. Reuse each layer according to its inputs."]
-completion = ["Host: register, clock, link and SMMU facts match the board inventory.", "Reads: SCSI capacity, GPT and known blocks are correct; OS/SystemOS windows stay within userdata.", "Root: the configured volume mounts and launchd starts. Persistence: writes survive reboot within the allocated Data region."]
-limits = ["The SoC DTSI exports host and PHY ranges. GCC and UFS SMMU handling currently use constants and operations in ShengUfs.", "The root transport uses a polled request slot. Its firmware adoption path requires a usable existing request list."]
-next_action = ["Record clock/PHY/reset initialization ownership and the SMMU stream before adapting this driver to another board."]
+status = "planned"
+components = ["ShengUfs", "VirtioMmioBlock", "VerifiedRoot"]
+paths = ["drivers/ShengUfs/**", "board.toml", "configs/**"]
+inputs = ["SM8550 UFS host controller and PHY resources from the shared SoC source.", "Board UFS and UFS PHY enablement in dts/ishtar.dts, both currently status = okay.", "Userdata partition geometry in board.toml."]
+configuration = ["CONFIG_XNU_NATIVE_UFS=n and CONFIG_XNU_NATIVE_VIRTIO_BLOCK=n in gpu_defconfig, so the storage path is selected as a component but not compiled into the kernel.", "board.userdata records first_lba = 3094592, last_lba = 64007162 and lba_bytes = 4096, with OS and SystemOS windows.", "dts/ishtar.dts sets ufs and ufsphy status = okay so the nodes are present in the hardware tree."]
+procedure = ["Read the UFS controller base address and the PHY register window from the vendor firmware DTB before writing board values.", "Build with CONFIG_XNU_NATIVE_UFS=y once the controller resources are confirmed, and record the boot attempt.", "Confirm the userdata geometry against the stock GPT before mounting anything."]
+findings = ["The UFS nodes are enabled in the device tree while the driver is compiled out, which is intentional: it keeps the hardware description complete so enabling the driver is a configuration change rather than a device-tree change.", "The partition geometry was taken from the stock GPT; first_lba and last_lba are absolute LBAs, so they are only valid for a device that has not been repartitioned.", "ShengUfs depends on VirtioMmioBlock and VerifiedRoot, so both appear in the component closure even though neither is compiled in yet."]
+completion = ["The kernel probes the UFS controller, reads the GPT and mounts the root volume."]
+limits = ["No controller address has been confirmed for ishtar; the value is expected to match the SM8550 reference board but that has not been checked against this unit's firmware.", "The root volume and the persistent Data volume are both unconfigured.", "No storage evidence of any kind exists for this board yet."]
+next_action = ["Read the UFS controller base and PHY window out of the stock ishtar firmware DTB and record them before enabling CONFIG_XNU_NATIVE_UFS."]
 
 [[area.evidence]]
 kind = "source"
-reference = "https://github.com/UniXNU/ShengUfs/blob/e2b32cc429e8cf1501161c1d8c517f8994ceb9b2/NativeUfs.cpp"
-result = "Implementation and configuration described in this section"
+reference = "board.toml"
+result = "Userdata partition geometry and the selected storage components"
 
 [[area]]
 id = "display"
-status = "implemented"
-components = ["GopFramebuffer"]
-paths = ["package/*Display*", "package/*Framebuffer*", "package/*Backlight*", "package/AppleARMBacklight.cpp", "package/GeniI2c*", "scripts/*display*", "scripts/*gop*", "scripts/*framebuffer*"]
-inputs = ["UEFI GOP framebuffer, stride, pixel format, splash reservation and board panel/backlight controls."]
-configuration = ["Select GopFramebuffer; CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y; artwork-display-gamut = sRGB.", "sheng-vsync=120 requests board display timing."]
-procedure = ["Verify GOP address, dimensions, stride and pixel layout before enabling presentation.", "Build the late display archive with the selected OS ABI records, then check display publication and frame presentation."]
-findings = ["The display source and ABI binding are selected independently from the physical panel configuration.", "The board configuration declares sRGB for the current 8-bit framebuffer path.", "scripts/build-gop-legacy-display.py also builds the board driver objects in the display archive, including the ADSP, IPC router, FAT reader and battery manager."]
-completion = ["A known frame appears with correct geometry and colors, then userland presentation and backlight controls work."]
-limits = ["The late display builder needs qualified prelink candidates and ABI records. A timing request requires a measured presentation result."]
-next_action = ["Record frame timing, pixel format and presentation evidence for each image used to qualify display."]
+status = "planned"
+components = []
+paths = ["dts/ishtar.dts", "board.toml", "package/BootProgressMin.c"]
+inputs = ["Panel resolution 1440x3200 with a 5760-byte stride, from the firmware framebuffer.", "Splash framebuffer physical base 0xb8000000 and size 0x2b00000."]
+configuration = ["payload.panic_framebuffer = { base = 0xb8000000, width = 1440, height = 3200, stride = 5760 } lets the panic path and the boot-progress renderer write pixels without a display driver.", "CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n and CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n, so no display driver is compiled in.", "kernel_args carry offline-legacy-gop=1 and offline-legacy-unit-scale=2 for the inherited legacy display path."]
+procedure = ["Record the framebuffer base, stride and format from the firmware before changing any display value.", "Confirm the panic framebuffer writes appear at the expected offset, since a wrong stride shifts every row.", "Enable CONFIG_XNU_NATIVE_MOBILE_DISPLAY only after the panel controller resources are confirmed."]
+findings = ["The only display output that works without a driver is the direct framebuffer path: panic screen and boot progress both write through the physical base, which is why they survive a hang before any display driver exists.", "Stride is not width times bytes per pixel. The panel reports 5760 bytes for 1440 pixels, so the renderer must use the reported stride or every row lands at the wrong address.", "The framebuffer is a reserved no-map region, so it is reachable only through the physical aperture once arm_vm_init has run."]
+completion = ["The panel shows kernel output through a real display driver rather than a direct framebuffer write."]
+limits = ["No display driver is compiled in; only the direct framebuffer path is available.", "Panel timing, backlight and the display controller have not been configured for this board.", "The framebuffer has not been observed on ishtar hardware."]
+next_action = ["Confirm the firmware framebuffer base and stride on the device, then enable CONFIG_XNU_NATIVE_MOBILE_DISPLAY with the panel resources filled in."]
 
 [[area.evidence]]
 kind = "source"
-reference = "package/LegacyDisplayProbe.cpp"
-result = "Implementation and configuration described in this section"
+reference = "board.toml"
+result = "Panic framebuffer geometry used by the direct framebuffer path"
 
 [[area]]
 id = "input"
-status = "implemented"
-components = ["ShengHidInput", "ShengNovatekTouch", "QcomGeniSpi"]
-paths = ["drivers/ShengHidInput", "drivers/ShengNovatekTouch", "package/*Touch*", "package/*Button*", "scripts/*touch*", "scripts/*hid*"]
-inputs = ["Novatek NT36532 sensor, GENI SPI controller, pin configuration, reset/interrupt lines, firmware and touch coordinate geometry."]
-configuration = ["Select ShengHidInput, ShengNovatekTouch and QcomGeniSpi; sheng-touch=4 and sheng-touch-hid=1 select board integration."]
-procedure = ["Read TouchBoard.h and verify the SPI clock and mode against the controller setup.", "Validate protocol reports, contact tracking and coordinate orientation before publishing HID events."]
-findings = ["Controller transfer logic, sensor protocol and board sensor geometry are separate inputs.", "Track contact IDs across movement and lift events; a register read alone covers only transport access."]
-completion = ["Touches map to the display, simultaneous contacts keep stable IDs, release events arrive, and buttons produce expected HID reports."]
-limits = ["Sensor firmware and board dimensions remain sheng inputs."]
-next_action = ["Attach contact and orientation observations when firmware or geometry changes."]
+status = "planned"
+components = []
+paths = ["drivers/ShengHidInput/**", "drivers/ShengNovatekTouch/**", "proprietary-files.txt"]
+inputs = ["Novatek NT36532 touch controller firmware, recorded in proprietary-files.txt with its SHA-256 digest.", "Touch bus, GPIO and interrupt assignment, not yet read from the vendor firmware."]
+configuration = ["ShengHidInput and ShengNovatekTouch exist in the tree but are not listed in board.components.include, so neither is built.", "proprietary-files.txt carries the Novatek firmware blob so the touch driver has its firmware input available once selected."]
+procedure = ["Read the touch controller's bus, reset GPIO and interrupt line from the vendor firmware DTB.", "Add ShengHidInput and ShengNovatekTouch to board.components.include and rebuild.", "Record the first touch report and the coordinate mapping."]
+findings = ["The touch firmware blob is already pinned even though the driver is not selected, so enabling input does not require a new vendor dump.", "ShengNovatekTouch depends on QcomGeniSpi for the SPI transport, so enabling touch pulls in the GENI SPI component as well."]
+completion = ["Touch reports reach the HID stack with correct coordinates and the home gesture is recognised."]
+limits = ["No input component is selected for this board.", "Bus, GPIO and interrupt values are unconfirmed.", "No input evidence exists for this board."]
+next_action = ["Read the Novatek controller's bus and interrupt assignment from the vendor firmware DTB."]
 
 [[area.evidence]]
 kind = "source"
-reference = "package/TouchBoard.h"
-result = "Implementation and configuration described in this section"
+reference = "proprietary-files.txt"
+result = "Novatek touch firmware pinned with its SHA-256 digest"
 
 [[area]]
 id = "gpu"
-status = "implemented"
-components = ["Adreno740", "AdrenoMetal", "AirNir", "Sm8550Platform", "AdrenoPM4", "AdrenoFirmware", "ArmSmmu4K"]
-paths = ["package/*Gpu*", "package/*Gmu*", "package/*Adreno*", "scripts/*adreno*", "scripts/*gpu*", "scripts/*metal*", "scripts/*turnip*", "scripts/*air*"]
-inputs = ["A740 GPU/GMU registers, GPU SMMU streams 0/1 and GMU stream 5, signed ZAP firmware and board power votes.", "Turnip, metal2vulkan, AIR translation and the selected OS GPU/Metal ABI."]
-configuration = ["Select Adreno740, AdrenoMetal and AirNir; shared SM8550 operations arrive through component dependencies.", "Board scripts combine shared GMU code with package/ShengGmuVotes.c."]
-procedure = ["Qualify power, firmware, SMMU and GMU startup before command submission.", "Check memory mapping, command completion and a known rendered image before staging the Metal plugin."]
-findings = ["GPU generation and the frontend ABI define component scope. Firmware, votes and display integration remain board inputs.", "Shared platform code and board votes require separate include paths during archive assembly."]
-completion = ["GPU submissions complete, mapping/fence handling is correct, a known image renders, and the selected Metal client presents it."]
-limits = ["A740 coverage depends on the selected firmware and OS ABI; board qualification requires its own memory and power evidence."]
-next_action = ["Record the exact firmware, compiler inputs, driver revision and rendered output for the next qualification."]
+status = "planned"
+components = ["Adreno740", "Sm8550Platform", "AdrenoPM4", "AdrenoFirmware", "ArmSmmu4K"]
+paths = ["drivers/**", "package/*Adreno*", "package/ArmSmmu4KProbe.c", "scripts/build-adreno-link-stubs.py", "configs/**"]
+inputs = ["Adreno 740 GPU and GMU resources from the shared SM8550 source.", "GPU firmware and PM4 microcode, audited by the probe builders in package/.", "GPU SMMU and GMU enablement in dts/ishtar.dts, all three currently status = okay."]
+configuration = ["CONFIG_XNU_NATIVE_ADRENO=y, but CONFIG_XNU_EXTRA_LD_ARCHIVES points at build/adreno-link-stubs/libAdrenoLinkStubs.a, so the kernel links against stubs rather than the full driver.", "kernel_args carry sheng-gpu-power=9, sheng-gpu-metal=1 and sheng-gpu-perf=8, inherited from the shared platform.", "dts/ishtar.dts enables gpu, gmu and gpu_smmu."]
+procedure = ["Run scripts/build-adreno-link-stubs.py to produce the stub archive the kernel link expects.", "Run the Adreno probe builders and compare the reported GPU identity against the expected Adreno 740 values.", "Record the first GPU command submission once the real driver replaces the stubs."]
+findings = ["The kernel links with Adreno link stubs on purpose: the full Adreno driver needs the AdrenoMetal accelerator ABI, which is a payload-stage component and has no kernel link variable. Selecting the component while linking stubs keeps the archive plan valid.", "GPU firmware and PM4 microcode are inputs, not build products; the probe builders audit the recorded candidates rather than regenerating them.", "Adreno740 pulls in Sm8550Platform, AdrenoPM4, AdrenoFirmware and ArmSmmu4K, which is why five components belong to this area."]
+completion = ["The GPU reports its identity, accepts a command submission and presents a frame through the Metal frontend."]
+limits = ["Only link stubs are compiled; no GPU command has been submitted on this board.", "The GPU and GMU have not been powered on outside the firmware.", "No GPU evidence exists for this board."]
+next_action = ["Run the Adreno probe builders against the ishtar firmware and record the reported GPU identity."]
 
 [[area.evidence]]
 kind = "source"
-reference = "scripts/build-adreno740-kits.py"
-result = "Implementation and configuration described in this section"
+reference = "scripts/build-adreno-link-stubs.py"
+result = "Builds the stub archive the kernel link uses while the full driver is unavailable"
 
 [[area]]
 id = "network"
-status = "implemented"
-components = ["Ath12kWifi"]
-paths = ["drivers/Ath12kWifi", "package/*Wifi*", "package/MhiBoot*", "scripts/*wifi*", "scripts/*mhi*"]
-inputs = ["Ath12k device on PCIe, BAR windows, MSI routing, DMA callbacks, firmware, MHI and QRTR services."]
-configuration = ["Select Ath12kWifi. build-gop-legacy-display.py compiles its objects through build-ath12k-wifi.py."]
-procedure = ["Verify PCIe enumeration and MSI delivery before MHI startup.", "Record firmware startup, scan, association, address configuration and bidirectional packet delivery separately."]
-findings = ["The reusable Wi-Fi stack consumes board callbacks; PCIe and the OS network interface are owned by the device integration.", "MHI startup and network traffic are separate completion points."]
-completion = ["Scanning, association, address configuration and sustained receive/transmit traffic pass with the selected firmware."]
-limits = ["The source implements the station path through WifiNet.cpp and board PCIe integration. Device evidence must identify the firmware and access point."]
-next_action = ["Attach association and receive/transmit observations for the current firmware and image."]
+status = "planned"
+components = []
+paths = ["drivers/Ath12kWifi/**"]
+inputs = ["Ath12k Wi-Fi hardware resources, not yet mapped for this board.", "Board Wi-Fi firmware and calibration data, not yet collected."]
+configuration = ["drivers/Ath12kWifi exists in the tree but is not listed in board.components.include, so it is not built.", "No network kernel arguments are set in board.toml."]
+procedure = ["Map the Wi-Fi PCIe or AHB window and the interrupt line from the vendor firmware.", "Collect the board calibration data and firmware before selecting the component.", "Add the component to board.components.include and record the first association attempt."]
+findings = ["The driver directory is present because the tree is derived from sheng, which does select it; ishtar does not, so the directory is currently unused by this board.", "Wi-Fi on this platform needs per-board calibration data that cannot be reused from a different board even on the same SoC."]
+completion = ["The interface associates and carries packets through the OS network stack."]
+limits = ["No network component is selected for this board.", "Calibration data has not been collected.", "No network evidence exists for this board."]
+next_action = ["Determine whether the Wi-Fi window is PCIe or AHB on this board before selecting the driver."]
 
 [[area.evidence]]
 kind = "source"
-reference = "package/WifiNet.cpp"
-result = "Implementation and configuration described in this section"
+reference = "board.toml"
+result = "Component selection showing that no network component is included"
 
 [[area]]
 id = "audio"
-status = "implemented"
+status = "planned"
 components = []
-paths = ["package/*Adsp*", "package/*Audio*", "package/*Gpr*", "package/FatVolume*", "package/QcomGlink*", "package/QcomMdt*", "package/QcomQrtr*", "package/ShengQrtr*", "package/QcomSmem*", "package/QcomSmp2p*", "scripts/*adsp*", "scripts/*audio*", "scripts/*gpr*", "scripts/*modem-fw*", "scripts/*qrtr*"]
-inputs = ["ADSP firmware, SMEM, SMP2P, GLINK, GPR services, board codec and audio routing."]
-configuration = ["The board display archive includes ADSP and audio probe objects."]
-procedure = ["Check firmware loading and ADSP service readiness before configuring audio endpoints.", "Record route, format and playback/capture observations for each enabled endpoint."]
-findings = ["The ADSP image loads in place from the split adsp and adsp_dtb files in /image of the modem_a FAT volume (modem_b as fallback); sheng-adsp-fw=DIR reads adsp.mbn and adsp_dtb.mbn from DIR instead.", "The DSP reaches GLINK and opens the battery manager and IPCRTR channels. The IPC router answers the DSP's service locator requests.", "Firmware startup, service registration and audible playback require separate evidence.", "The GPR client and firmware loading helpers can be inspected independently from codec routing."]
-completion = ["Each declared route carries the selected audio format through playback or capture and handles start/stop correctly."]
-limits = ["Current source contains ADSP bring-up and audio framework probes. Endpoint playback qualification needs route-specific evidence."]
-next_action = ["Document the codec, clocks and endpoint routing before claiming playback completion."]
+paths = ["package/AudioProbe.cpp", "package/AdspFirmware.c", "package/AdspProbe.cpp"]
+inputs = ["ADSP firmware and the codec topology, neither collected for this board.", "Board audio routing, not yet documented."]
+configuration = ["No audio component is selected in board.components.include.", "The ADSP probe builders exist in package/ but are not part of the ishtar archive plan."]
+procedure = ["Collect the ADSP firmware image and record its hash.", "Map the codec and the amplifier enable GPIOs from the vendor firmware.", "Select the audio components and record playback and capture separately."]
+findings = ["ADSP firmware is a per-board input; the probe builders audit a recorded candidate rather than synthesising one.", "The audio path on this platform spans ADSP, codec and amplifier, so it cannot be enabled by a single component selection."]
+completion = ["Playback and capture both work through the OS audio stack."]
+limits = ["No audio component is selected.", "No firmware or routing data has been collected.", "No audio evidence exists for this board."]
+next_action = ["Collect the ADSP firmware image and record its hash before attempting audio bring-up."]
 
 [[area.evidence]]
 kind = "source"
-reference = "package/AudioProbe.cpp"
-result = "Implementation and configuration described in this section"
+reference = "board.toml"
+result = "Component selection showing that no audio component is included"
 
 [[area]]
 id = "power"
-status = "implemented"
-components = ["AppleKeyStoreState"]
-paths = ["package/*Battery*", "package/*Battmgr*", "package/*Power*", "package/*PlatformPower*", "package/QcomQmp*", "package/QcomRpmh*", "package/QcomScm.h", "scripts/*power*", "scripts/*battery*", "scripts/*pmgr*"]
-inputs = ["Board PMGR integration, clocks/regulators and per-peripheral power requirements.", "ADSP battery manager: PMIC GLINK owner 32778 on PMIC_RTR_ADSP_APPS; board properties use opcode 0x50; fuel gauges 0x8a/0x8b and 0xa6/0xa7."]
-configuration = ["CONFIG_XNU_SHENG_PMGR=y; sheng-pmgr=2 selects the board integration.", "AppleKeyStoreState is selected with the OS event integration.", "sheng-adsp=2 sheng-battery=1 publish the battery as an IOPMPowerSource.", "sheng-usb-sdp-ma sets the input limit on a standard computer port (default 900; 0 keeps the firmware limit)."]
-procedure = ["Document each clock, regulator and firmware-owned state before enabling power transitions.", "Check battery units and update behavior separately from suspend/resume and peripheral power.", "Read the [battery], [battery-raw] and [charger] log lines with scripts/read-sheng-log.py."]
-findings = ["The ADSP firmware runs charging and PD/PPS negotiation without host requests.", "Battery properties after 11 are shifted by one: charge current 12, temperature 13, charge counter 15, cycles 16, design 17, full 18, time to full 20, time to empty 21.", "Charge is the sum of both fuel gauges' remaining over full capacity. Battery current is reported discharge-positive.", "USB property 6 reads SDP on every port. Property 7 carries the adapter type (6 PD, 8 PD PPS).", "A PPS adapter gets a 3 A input limit at about 8.7 V; the battery charges at the 2000 mA charge current with the charge pump off.", "Both cells and the PD adapter read unauthenticated.", "A Mac USB-C port negotiates PD 5 V with a 1.2 A input limit, below the load during boot.", "Power policy belongs to the board even when controller operations are shared."]
-completion = ["Declared power controls and battery readings match observations; each claimed sleep/resume transition restores its dependent peripherals."]
-limits = ["Adapter details shown to iOS come from USB property 6, so every adapter reads as a computer port.", "Charge current stays at 2 A without fuel gauge and adapter authentication.", "A low-battery shutdown panics in vnode_rele_ext during unmount.", "Per-peripheral controls and battery publication have separate coverage from system suspend."]
-next_action = ["Take adapter details from property 7.", "Authenticate both fuel gauges, then qualify PPS charge pump charging; Xiaomi adapter authentication follows."]
+status = "planned"
+components = []
+paths = ["board.toml", "configs/**", "package/BatteryProbe.cpp"]
+inputs = ["Regulator and clock ownership from the shared SM8550 source.", "Battery fuel gauge configuration, not yet confirmed for this board."]
+configuration = ["CONFIG_XNU_SHENG_PMGR=y, inherited from the shared platform, but the power manager has not been exercised on this board.", "kernel_args carry sheng-cpufreq=3 and sheng-disable-watchdogd=1.", "payload.adt.defaults.u32 sets sleep-disabled = 1 so the device does not suspend during bring-up."]
+procedure = ["Record the regulator and clock state the firmware leaves behind before claiming ownership.", "Confirm the fuel gauge reports a plausible charge level before enabling battery reporting.", "Remove sleep-disabled = 1 only after suspend and resume are understood."]
+findings = ["sleep-disabled = 1 is a bring-up setting, not a shipping one; leaving it set hides suspend bugs rather than fixing them.", "The power manager is compiled in through the shared platform but has no board-specific regulator or clock table for ishtar yet.", "CPU frequency policy is inherited from the shared platform and has not been retuned for this board's thermal envelope."]
+completion = ["Regulators and clocks are owned by the OS, the battery reports a plausible charge, and suspend and resume work."]
+limits = ["No board-specific regulator or clock configuration exists.", "The fuel gauge has not been read on this board.", "No power evidence exists for this board."]
+next_action = ["Read the fuel gauge on the first device boot and compare it against the stock firmware's reported charge."]
 
 [[area.evidence]]
 kind = "source"
-reference = "package/ShengBattery.cpp"
-result = "Implementation and configuration described in this section"
-
-[[area.evidence]]
-kind = "host"
-reference = "scripts/check-battery-host.py"
-command = "python3 scripts/check-battery-host.py"
-revision = "8719a19294bc79eed72366a19070acfd8e131737"
-result = "PASS battery manager: 4074 checks"
-
-[[area.evidence]]
-kind = "device"
-reference = "scripts/read-sheng-log.py"
-command = "fastboot boot boot.img; python3 scripts/read-sheng-log.py --wait 240"
-revision = "8719a19294bc79eed72366a19070acfd8e131737"
-result = "PPS adapter: 8.72 V at 1.3 A in, battery +1.99 A, 1 to 3 percent in 3 minutes. Mac: PD 5 V, 1.2 A limit, battery -0.9 to -1.2 A. Temperature 31.4 to 32.9 C; full 9353 mAh, design 9800 mAh, 172 cycles."
+reference = "board.toml"
+result = "Power-related kernel arguments and the sleep-disabled bring-up default"
 
 [[area]]
 id = "packaging"
 status = "implemented"
 components = ["DarwinBoot", "XnuPrelink", "SoftwareAES"]
-paths = ["scripts/*payload*", "scripts/*image*", "scripts/*flash*", "patches/**", "package/Kit.toml"]
-inputs = ["Prelinked kernel, hardware DTB, generated ADT, trust cache, Data seed, platform identity and firmware DTB."]
-configuration = ["Payload volume is 208 MiB. kernel.patch_series selects ARM64, SoC, OS and device series in order."]
-procedure = ["Build kernel and package, then payload with --unique-chip-id and the selected trust-cache/Data inputs.", "Run ./unixnu bootimg -D ../UniXNU-sheng --uefi ../uefi-sheng --dtb <firmware.dtb> and inspect the assembly report."]
-findings = ["The OS boot-progress integration follows the SoC hooks in patch order.", "The payload carries kernel.macho.adt; the boot image carries the firmware FDT. Keep the two inputs named explicitly."]
-completion = ["Kernel and prelink succeed, payload contains all declared inputs, and the boot image matches the bootloader format and size limit."]
-limits = ["Image output depends on the selected ABI audits, firmware and volume policy inputs."]
-next_action = ["Attach artifact paths and exact source revisions to the next image build record."]
+paths = ["board.toml", "configs/**", "package/**", "scripts/**"]
+inputs = ["iPadOS 17.7.11 kernelcache as the prelink input.", "Firmware DTB for boot-image assembly.", "The recorded archive plan in board.kernel.archives."]
+configuration = ["kernel.archives lists the ordered archive plan, mixing component: entries and script filenames.", "payload.volume = ISHTARESP, size_mib = 54, loader = firmware, title = Boot iPadOS.", "bootimg.dtb_node adds reserved-memory/splash_region to the firmware DTB so the firmware hands the framebuffer over."]
+procedure = ["Run ./unixnu kernel -D ../UniXNU-ishtar and confirm kernel/kernel.macho is produced.", "Run ./unixnu payload -D ../UniXNU-ishtar and confirm payload/payload.img and payload/payload.json.", "Run ./unixnu bootimg -D ../UniXNU-ishtar and confirm the assembled image reports a passing round trip."]
+findings = ["The archive plan is explicit rather than inherited, so every kernel-stage recipe appears in order; a component: entry resolves through the component catalog and a bare filename runs a shared builder.", "build-adreno740-accelerator.py is deliberately absent from the archive plan because it needs a payload-stage header that the kernel link does not provide; adding it fails the link.", "Boot-image assembly needs the firmware DTB. Without it the payload is correct but the image cannot be produced.", "The container is larger than the payload because the boot image inlines a 64 MiB window at 0xF0000000 with ramdisk_bytes = 0 and no appended device tree."]
+completion = ["Kernel, payload and boot image all build, and the assembled image passes its own round-trip check."]
+limits = ["The boot image has never been loaded on ishtar hardware.", "The build has no recorded host verification entry yet because the device repository has no published commit to cite.", "Kernel build reliability is affected by an intermittent clang frontend crash on osfmk/vm/vm_kern.c, which is resolved by re-running the single translation unit rather than by a source change."]
+next_action = ["Publish the device repository, then record the kernel, payload and boot-image commands with the resulting commit as host evidence."]
 
 [[area.evidence]]
 kind = "source"
-reference = "patches/xnu/series"
-result = "Implementation and configuration described in this section"
+reference = "configs/gpu_defconfig"
+result = "Board kernel configuration including the extra link archive and the boot-progress switch"
+
+[[area.evidence]]
+kind = "source"
+reference = "board.toml"
+result = "Archive plan, payload policy and boot-image device-tree overlay"
 
 [[area]]
 id = "diagnostics"
 status = "implemented"
 components = []
-paths = ["scripts/check-*", "scripts/probe-*", "scripts/audit-*", "scripts/read-*", "scripts/prepare-*", "scripts/data/**", "package/tests/**", "package/*Tests*", "package/*Diagnostic*", "package/*Probe*", "package/Boot*", "package/linux-log/**", "unixnu.lock"]
-inputs = ["Serial or framebuffer diagnostics, panic region, boot checkpoints and a recovery path."]
-configuration = ["boot-progress=2 enables checkpoints; source and image revisions accompany every log."]
-procedure = ["Run the existing check for the changed area and keep its command, output and input revision.", "Record the last completed checkpoint and the first failing operation; link the captured output."]
-findings = ["A source implementation, a host check and a device observation establish different completion levels.", "Keep an unresolved cause explicit and record the next measurement that can distinguish it.", "The UFS log carries [adsp], [qrtr], [battery], [battery-raw] and [charger] lines for the DSP, the IPC router and the charger.", "Host checks for the ADSP path: check-adsp-host.py, check-modem-fw-host.py, check-qrtr-host.py and check-battery-host.py."]
-completion = ["Each claimed milestone has a reproducible command, a matching source/image revision and an accessible result."]
-limits = ["Source references in this record describe implemented behavior. Host and device status require their respective evidence entries."]
-next_action = ["Add captured host or device evidence when repeating a checkpoint on a known image."]
+paths = ["package/BootProgressMin.c", "package/BootProgress.c", "package/BootDiagExport.c", "scripts/build-boot-progress-min.py", "scripts/build-boot-progress.py", "scripts/xnu-panic-screen.c"]
+inputs = ["Framebuffer geometry from board.toml for direct pixel writes.", "The kernel symbol physmap_base for reaching the framebuffer after arm_vm_init.", "The 5x12 glyph table in the firmware Font.h."]
+configuration = ["CONFIG_XNU_BOOT_PROGRESS=y selects the boot-progress observer in gpu_defconfig.", "Two implementations provide the entry points: BootProgressMin.c is self-contained and links into any configuration, while BootProgress.c is the full monitor and requires the audited UFS, owner-root, Virtio and source-corecrypto build.", "payload.panic_screen = true and payload.panic_framebuffer give the panic path a place to draw."]
+procedure = ["Run scripts/build-boot-progress-min.py to build libBootProgress.a and confirm the undefined-symbol gate passes.", "Boot the image and photograph the panel; the last numbered log line identifies the stage the kernel did not survive.", "Compare the last stage against the checkpoint list to pick the next area to investigate."]
+findings = ["The observer must never fault: a diagnostic that faults turns a hang into a hang with no output. Every kernel pointer is probe-translated with AT S1E1R before it is read, and every framebuffer store is bounded by the geometry the console reported.", "boot_progress_active() stays false until a framebuffer has been validated, so a board with no usable framebuffer keeps its normal console output instead of going silent.", "Once the observer binds, the normal console output is suppressed; a rendering fault therefore leaves a half-drawn screen with no textual output. The panic screen is a separate mechanism and is unaffected.", "The self-contained implementation is chosen by default because the full monitor reads UFS and Virtio counters directly and fails the link in a reduced configuration.", "A fixed-size literal destination can be constant-folded into mov/movk immediates, so a string that is visibly in the source may not appear in __cstring. Verifying that a patch reached the image needs a string that is genuinely stored as a literal."]
+completion = ["The screen shows the boot-progress panel and the last logged stage identifies where the kernel stopped."]
+limits = ["The observer has never rendered on ishtar hardware; its layout has only been verified on the host with a synthetic framebuffer.", "The full monitor implementation cannot be selected without the audited storage, owner-root, Virtio and corecrypto build."]
+next_action = ["Boot the boot-progress image on ishtar and record the last logged stage together with a photograph of the panel."]
 
 [[area.evidence]]
 kind = "source"
-reference = "scripts/read-sheng-log.py"
-result = "Implementation and configuration described in this section"
+reference = "package/BootProgressMin.c"
+result = "Self-contained boot-progress observer that renders stages to the raw framebuffer"
+
+[[area.evidence]]
+kind = "source"
+reference = "scripts/build-boot-progress-min.py"
+result = "Build script with an undefined-symbol gate that rejects the object when the kernel image cannot satisfy it"

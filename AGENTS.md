@@ -1,9 +1,11 @@
 # Agent instructions
 
-This repository owns sheng board configuration, peripherals, firmware
+This repository owns ishtar board configuration, peripherals, firmware
 selection, partition layout, power policy, and packaging. Shared SM8550
 resources and operations belong to `UniXNU-sm8550-common`. The documentation
-site, component catalog, and common build tools belong to `UniXNU`.
+site, component catalog, and common build tools belong to `UniXNU`. The board
+reuses the `sheng` kit, so shared package scripts and the archive plan live
+there rather than here.
 
 Read the following before editing:
 
@@ -23,17 +25,17 @@ ABI, and board dependencies. Use canonical component names in sources,
 paths, build commands, and dependencies. Preserve source filenames,
 runtime classes, bundle IDs, plugin filenames, symbols, and protocol IDs.
 
-Use `dts/sheng.dts` for board hardware and include the selected SoC DTSI.
+Use `dts/ishtar.dts` for board hardware and include the selected SoC DTSI.
 Keep GPU votes and signed ZAP firmware inputs with the board. Inspect
 `local.toml` and CLI overrides before changing source pins.
 
 Run from the UniXNU checkout:
 
 ```sh
-./unixnu defconfig sheng_defconfig --device ../UniXNU-sheng
-./unixnu status --device ../UniXNU-sheng --json
-./unixnu tree --device ../UniXNU-sheng
-./unixnu build kernel --device ../UniXNU-sheng
+./unixnu defconfig gpu_defconfig --device ../UniXNU-ishtar
+./unixnu status --device ../UniXNU-ishtar --json
+./unixnu tree --device ../UniXNU-ishtar
+./unixnu kernel --device ../UniXNU-ishtar
 ```
 
 Use the README for firmware and payload inputs. Run existing checks
@@ -53,3 +55,15 @@ For storage, also read the [UFS guide](https://unixnu.com/porting/ufs).
 Update each affected area's findings or evidence with its code change.
 The documentation site renders this same record. Follow its schema and
 completion levels for both maintainer and agent work.
+
+## Board constraints
+
+The board declares 8 GiB of DRAM, deliberately below the fitted capacity, and
+a `no-map` splash reservation at `0xb8000000`. Neither value is a placeholder:
+raising the declared DRAM lets the physical aperture reach addresses no DRAM
+backs, and mapping the splash region as normal memory lets the page-table
+allocator hand the framebuffer out.
+
+`gpu_defconfig` leaves `CONFIG_XNU_NATIVE_UFS`, `CONFIG_XNU_NATIVE_LEGACY_DISPLAY`
+and `CONFIG_XNU_NATIVE_MOBILE_DISPLAY` off. The device tree still enables those
+nodes so that turning a driver on is a configuration change. Keep that split.
