@@ -11,94 +11,85 @@
 </p>
 
 <p align="center">
-  English | <a href="README.zh-CN.md">简体中文</a>
+  简体中文 | <a href="README.en.md">English</a>
 </p>
 
 # UniXNU ishtar
 
-Device support for Xiaomi 13 Ultra, codename `ishtar`, with Qualcomm SM8550.
-The device profile selects
-[UniXNU-sm8550-common](https://github.com/UniXNU/UniXNU-sm8550-common) and the
-`ipados-17.7.11-21H461` OS profile in UniXNU. The board reuses the `sheng` kit,
-so the archive plan, ADT generator and package scripts are shared with the
-SM8550 reference board.
+小米 13 Ultra（代号 `ishtar`）的设备支持，SoC 为高通 SM8550。设备配置选择
+[UniXNU-sm8550-common](https://github.com/UniXNU/UniXNU-sm8550-common) 与 UniXNU 中的
+`ipados-17.7.11-21H461` OS profile。本板复用 `sheng` 的 kit，因此 archive 方案、
+ADT 生成器和打包脚本与 SM8550 参考板共享。
 
-## State
+## 状态
 
-Kernel, payload and boot image all build, and the assembled image passes its
-own round-trip check. Nothing has been loaded on ishtar hardware yet.
+内核、载荷和启动镜像均已构建通过，组装后的镜像也通过自身的往返校验。尚未在
+ishtar 真机上加载任何内容。
 
-| Area | State |
+| 部分 | 状态 |
 | --- | --- |
-| Configuration, firmware, CPU, memory, image assembly, diagnostics | Implemented |
-| Storage, display, input, GPU, network, audio, power | Not started |
+| 配置、固件、CPU、内存、镜像组装、诊断 | 已实现 |
+| 存储、显示、输入、GPU、网络、音频、电源 | 未开始 |
 
-Storage and display are described in the device tree but compiled out. The GPU
-links against stubs. The touch firmware is pinned but the driver is not
-selected. See [porting.toml](porting.toml) for the inputs, findings and
-completion criteria behind each entry.
+存储和显示在设备树中有描述，但被编译关闭。GPU 链接到桩实现。触控固件已固定
+版本，但驱动未被选中。各条目的输入、发现和完成标准见
+[porting.toml](porting.toml)。
 
-## Structure
+## 结构
 
-| Path | Contents |
+| 路径 | 内容 |
 | --- | --- |
-| `porting.toml` | Subsystem inputs, findings, evidence and completion criteria |
-| `board.toml` | Device configuration and component selection |
-| `feeds.toml` | Pinned SoC source |
-| `configs/gpu_defconfig` | Board kernel settings |
-| `configs/bringup_defconfig` | Every optional component disabled, for early entry work |
-| `dts/ishtar.dts` | Memory, reserved regions and peripheral enablement |
-| `patches/xnu/series` | Board patches |
-| `proprietary-files.txt` | Firmware input paths |
-| `package/` | Device policy and diagnostics |
-| `drivers/MiniDisplay/` | Framebuffer and surface implementation, not wired into the build |
-| `scripts/` | Device build and inspection tools |
+| `porting.toml` | 各子系统的输入、发现、证据和完成标准 |
+| `board.toml` | 设备配置与组件选择 |
+| `feeds.toml` | 固定的 SoC 源码 |
+| `configs/gpu_defconfig` | 板级内核设置 |
+| `configs/bringup_defconfig` | 关闭全部可选组件，用于早期入口调试 |
+| `dts/ishtar.dts` | 内存、保留区与外设启用 |
+| `patches/xnu/series` | 板级补丁 |
+| `proprietary-files.txt` | 固件输入路径 |
+| `package/` | 设备策略与诊断 |
+| `drivers/MiniDisplay/` | 帧缓冲与 surface 实现，未接入构建 |
+| `scripts/` | 设备构建与检查工具 |
 
-`configs/sheng_defconfig` is inherited from the reference board and is kept as a
-comparison point. The board builds with `gpu_defconfig`; `board.toml` names it.
+`configs/sheng_defconfig` 继承自参考板，保留作为对照点。本板使用
+`gpu_defconfig` 构建，`board.toml` 中指定了它。
 
-`Adreno740` is selected with `Sm8550Platform`, `AdrenoPM4`, `AdrenoFirmware` and
-`ArmSmmu4K`, but the kernel link uses
-`build/adreno-link-stubs/libAdrenoLinkStubs.a`. The full driver needs the
-payload-stage accelerator ABI and the kernel link has no archive variable for
-it, so `scripts/build-adreno-link-stubs.py` supplies the stubs instead.
+`Adreno740` 与 `Sm8550Platform`、`AdrenoPM4`、`AdrenoFirmware`、`ArmSmmu4K`
+一同被选中，但内核链接使用 `build/adreno-link-stubs/libAdrenoLinkStubs.a`。
+完整驱动需要载荷阶段的加速器 ABI，而内核链接没有对应的 archive 变量，因此由
+`scripts/build-adreno-link-stubs.py` 提供桩实现。
 
-`ShengUfs`, `VirtioMmioBlock` and `VerifiedRoot` are selected while
-`CONFIG_XNU_NATIVE_UFS` stays off, which keeps the hardware description complete
-so enabling storage is a configuration change rather than a device-tree change.
-The same applies to display: `dts/ishtar.dts` enables `ufs`, `ufsphy`, `gpu`,
-`gmu` and `gpu_smmu`, while `CONFIG_XNU_NATIVE_LEGACY_DISPLAY` and
-`CONFIG_XNU_NATIVE_MOBILE_DISPLAY` remain off.
+`ShengUfs`、`VirtioMmioBlock` 和 `VerifiedRoot` 已被选中，但
+`CONFIG_XNU_NATIVE_UFS` 保持关闭。这样硬件描述是完整的，启用存储只需改配置，
+而不必改设备树。显示同理：`dts/ishtar.dts` 启用了 `ufs`、`ufsphy`、`gpu`、
+`gmu` 和 `gpu_smmu`，而 `CONFIG_XNU_NATIVE_LEGACY_DISPLAY` 与
+`CONFIG_XNU_NATIVE_MOBILE_DISPLAY` 仍为关闭。
 
-The only display output that works without a driver is the direct framebuffer
-path in `board.toml`: `panic_framebuffer` at `0xb8000000`, 1440x3200, 5760-byte
-stride. Panic screen and boot progress both write through it.
+无驱动时唯一可用的显示输出是 `board.toml` 中的直接帧缓冲路径：位于
+`0xb8000000` 的 `panic_framebuffer`，1440x3200，行跨度 5760 字节。崩溃界面和
+启动进度都通过它输出。
 
-`drivers/MiniDisplay/` holds a framebuffer and surface implementation that no
-archive builds yet. It has no archive entry, no `bsd_init` hook and no
-configuration switch, so it is inert until those are added.
+`drivers/MiniDisplay/` 中的帧缓冲与 surface 实现尚无 archive 构建。它没有
+archive 条目、没有 `bsd_init` 挂钩、也没有配置开关，因此在补齐之前不生效。
 
-## Development record
+## 开发记录
 
-Maintain [porting.toml](porting.toml) with every subsystem change. It records
-hardware, configuration, procedures, findings, evidence and completion criteria.
-Maintainers and agents follow the [record guide](https://unixnu.com/porting/records).
-The `Porting record` CI check validates structure, component coverage and
-updates to findings or evidence for changed code.
+每次子系统改动都要维护 [porting.toml](porting.toml)。它记录硬件、配置、操作
+步骤、发现、证据和完成标准。维护者和 agent 遵循[记录指南](https://unixnu.com/zh/porting/records)。
+`Porting record` CI 检查会校验结构、组件覆盖情况，以及代码改动是否同步更新了
+发现或证据。
 
-Shared components come from the selected profiles and the UniXNU catalog. Read
-the [UFS guide](https://unixnu.com/porting/ufs) before changing storage
-resources or policy.
+共享组件来自所选 profile 和 UniXNU 组件目录。修改存储资源或策略前请先阅读
+[UFS 指南](https://unixnu.com/zh/porting/ufs)。
 
-## Build
+## 构建
 
-The firmware must embed UniXNU, UniXNUDxe, DarwinBoot and the shared
-`UniXNURamDiskDxe`, with DiskIoDxe and FAT support. These modules expose the
-payload configuration and its boot entries. The board package is
-`Platforms/Xiaomi/ishtarPkg` inside the sheng firmware tree. Follow
-[firmware integration](https://unixnu.com/porting/uefi-firmware#required-integration).
+固件必须嵌入 UniXNU、UniXNUDxe、DarwinBoot 和共享的 `UniXNURamDiskDxe`，并
+支持 DiskIoDxe 与 FAT。这些模块提供载荷配置及其启动项。板级包位于 sheng 固件
+树中的 `Platforms/Xiaomi/ishtarPkg`。参见
+[固件集成](https://unixnu.com/zh/porting/uefi-firmware#required-integration)。
 
-Run these commands from the UniXNU checkout:
+在 UniXNU 检出目录中执行以下命令：
 
 ```sh
 ./unixnu defconfig gpu_defconfig --device ../UniXNU-ishtar
@@ -111,45 +102,40 @@ Run these commands from the UniXNU checkout:
 ./unixnu bootimg --device ../UniXNU-ishtar --uefi ../uefi-sheng --dtb /path/to/firmware.dtb
 ```
 
-Outputs are under `out/ishtar/ipados-17.7.11-21H461/gpu/`.
-The payload step compiles the hardware DTS and writes `kernel.macho.adt`.
-The boot image takes the firmware's FDT with `--dtb`.
+输出位于 `out/ishtar/ipados-17.7.11-21H461/gpu/`。载荷步骤编译硬件 DTS 并写出
+`kernel.macho.adt`。启动镜像通过 `--dtb` 取用固件的 FDT。
 
-Build inputs include the selected kernelcache, the firmware DTB, vendor firmware
-and UEFI source. Keep binary inputs in local caches. `proprietary-files.txt`
-records the firmware inventory against an upstream commit.
+构建输入包括所选 kernelcache、固件 DTB、厂商固件和 UEFI 源码。二进制输入保存在
+本地缓存。`proprietary-files.txt` 按上游提交记录固件清单。
 
-The kernel build has one known flake: the clang frontend occasionally crashes on
-`osfmk/vm/vm_kern.c` and writes a truncated `.o.json`. Re-running that single
-translation unit clears it. A replay must keep `-MJ` and must carry
-`-DXNU_BOOT_PROGRESS=1`, or the console hooks compile to no-ops without any
-error.
+内核构建有一个已知偶发问题：clang 前端偶尔在 `osfmk/vm/vm_kern.c` 上崩溃，并
+写出被截断的 `.o.json`。重跑该单个编译单元即可恢复。重放时必须保留 `-MJ`，并
+且必须带上 `-DXNU_BOOT_PROGRESS=1`，否则控制台钩子会静默编译为空操作。
 
-## Documentation
+## 文档
 
-The documentation site is maintained in UniXNU:
+文档站维护在 UniXNU 中：
 
-- [Device page](https://unixnu.com/devices/ishtar)
-- [Building](https://unixnu.com/building)
-- [Device repository specification](https://unixnu.com/porting/device-repository)
-- [Device-tree specification](https://unixnu.com/porting/device-tree)
-- [Component catalog](https://unixnu.com/reference/components)
-- [Migration](https://unixnu.com/porting/migration)
+- [设备页面](https://unixnu.com/zh/devices/ishtar)
+- [构建与启动](https://unixnu.com/zh/building)
+- [设备仓库规范](https://unixnu.com/zh/porting/device-repository)
+- [设备树规范](https://unixnu.com/zh/porting/device-tree)
+- [组件目录](https://unixnu.com/zh/reference/components)
+- [迁移](https://unixnu.com/zh/porting/migration)
 
-Report build results and device boot, storage, display, input, and GPU
-observations separately, with source revisions and commands.
+构建结果与真机的启动、存储、显示、输入和 GPU 观察请分开报告，并附源码版本和
+命令。
 
-## Contact
+## 联系
 
-Port discussion happens in the Telegram group [@petegroup](https://t.me/petegroup).
-Build results, boot checkpoints and hardware observations still belong in
-`porting.toml` and the issue tracker, because the group is a conversation
-channel rather than a record.
+移植讨论在 Telegram 群 [@petegroup](https://t.me/petegroup)。构建结果、启动
+检查点和硬件观察仍应写入 `porting.toml` 和 issue 追踪器，因为群组是对话渠道，
+不是记录。
 
-## Local build inputs
+## 本地构建输入
 
-Save device paths and boot arguments in `unixnu.local.toml` in the UniXNU
-checkout. See the [configuration reference](https://unixnu.com/reference/configuration#local-build-inputs).
-Argument changes require rebuilding the payload and boot image. See
-[boot arguments](https://unixnu.com/xnu/boot-arguments#apply-arguments)
-and [green-bar diagnosis](https://unixnu.com/guide/debugging#green-bar).
+把设备路径和启动参数保存在 UniXNU 检出目录的 `unixnu.local.toml`。参见
+[配置参考](https://unixnu.com/zh/reference/configuration#local-build-inputs)。
+参数改动需要重新构建载荷和启动镜像。参见
+[启动参数](https://unixnu.com/zh/xnu/boot-arguments#apply-arguments)和
+[绿色交接条诊断](https://unixnu.com/zh/guide/debugging#green-bar)。
