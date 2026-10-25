@@ -1,5 +1,17 @@
 <p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
+    <img alt="UniXNU" src="assets/logo-light.svg" width="200">
+  </picture>
+</p>
+
+<p align="center">
   <a href="https://t.me/petegroup"><img alt="Telegram" src="https://img.shields.io/badge/Telegram-@petegroup-26A5E4?logo=telegram&logoColor=white"></a>
+</p>
+
+<p align="center">
+  English | <a href="README.zh-CN.md">简体中文</a>
 </p>
 
 # UniXNU ishtar
