@@ -52,10 +52,12 @@ static void put (struct ctx *g, u8 c)
   const u32 cell = 6 * SCALE, line = 14 * SCALE;
   u32 row, col, dy, dx;
 
+#if PANIC_TEXT
   if (g->log && g->logn < PANIC_TEXT_BYTES - 1 && c >= 9 && c <= 126) {
     g->log[g->logn++] = (c < 32) ? ' ' : c;
     g->log[g->logn] = 0;
   }
+#endif
 
   if (c == '\n') {
     g->x = 0;
@@ -122,6 +124,15 @@ static int readable (const char *s, const u64 *args)
   if (a < 0xffff000000000000UL) return 0;
   __asm__ volatile ("at s1e1r, %1; isb; mrs %0, par_el1" : "=r" (par) : "r" (a) : "memory");
   return !(par & 1) && ((par >> 60) != 0);
+}
+
+/* Same hardware query for any address, including the low physical ones the boot
+ * environment uses before arm_vm_init() installs the kernel's own tables. */
+static int translated (u64 a)
+{
+  u64 par;
+  __asm__ volatile ("at s1e1r, %1; isb; mrs %0, par_el1" : "=r" (par) : "r" (a) : "memory");
+  return !(par & 1);
 }
 
 static void format (struct ctx *g, const char *fmt, const u64 *args)
@@ -222,11 +233,33 @@ __attribute__((noreturn, used, section(".text.b_main"))) void panic_screen_main 
   u32 row, col;
 
   __asm__ volatile ("msr daifset, #15");
+#ifdef PANIC_FB_BASE
+  /* No display driver in this build: PE_state.video is empty or stale, so draw
+   * with the geometry the bootloader's firmware already programmed. */
+  g.base = (u8 *)(u64)PANIC_FB_BASE;
+  g.rb   = PANIC_FB_STRIDE;
+  g.w    = PANIC_FB_WIDTH;
+  g.h    = PANIC_FB_HEIGHT;
+#ifdef PANIC_PHYSMAP
+  /* The frame buffer's physical address is a kernel virtual address only while the
+   * bootstrap identity map sits in TTBR0. arm_vm_init() swaps that for the invalid
+   * table and expects the physical aperture instead, so a store to 0xB8000000 faults
+   * from then on - which is why a panic past the swap looked like a silent hang.
+   * Ask the hardware which of the two is mapped; the aperture base is 0 until it is set. */
+  if (!translated ((u64)g.base) && translated ((u64)PANIC_PHYSMAP)) {
+    g.base += *(volatile u64 *)(u64)PANIC_PHYSMAP;
+  }
+#endif
+#else
   g.base = (u8 *)v->v_baseaddr;
   g.rb   = v->v_rowbytes;
   g.w    = v->v_width;
   g.h    = v->v_height;
-  if (g.base == 0 || v->v_depth != 32 || fmt == 0) {
+  if (v->v_depth != 32) {
+    park ();
+  }
+#endif
+  if (g.base == 0 || fmt == 0) {
     park ();
   }
 
@@ -235,6 +268,11 @@ __attribute__((noreturn, used, section(".text.b_main"))) void panic_screen_main 
   volatile u32 *mark = (volatile u32 *)(g.base + (u64)(g.h - 1) * g.rb);
   if (mark[0] == 0xC0FFEE11u && mark[1] == 0x5CEEDA7Au) {
     park ();
+  }
+  /* A strip across the top row says this screen ran at all. Without it a black
+   * screen cannot be told apart from a boot that never panicked. */
+  for (col = 0; col < g.w; col++) {
+    *(volatile u32 *)(g.base + (u64)col * 4) = 0xFF00FFFFu;
   }
   g.x = 0;
   g.y = g.h / 8;

@@ -2,11 +2,19 @@
 """Build the opt-in board diagnostic against this source kernel's actual ABI."""
 import hashlib
 import json
+import os
+import shutil
 from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/boot-progress'
+# The host has no Apple ar; llvm-ar writes the same BSD archive the linker reads.
+AR = next((c for c in ('llvm-ar', 'ar') if shutil.which(c)), 'ar')
+# The UEFI checkout is a sibling of this repository, not part of the assembled tree.
+UEFI = next((p for p in (ROOT / 'uefi-sheng', ROOT.parent / 'uefi-sheng', Path(os.environ.get('UNIXNU_UEFI_ROOT', '/')))
+             if (p / 'Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib').is_dir()),
+            ROOT / 'uefi-sheng')
 OUT.mkdir(parents=True, exist_ok=True)
 record = json.loads((ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json').read_text().strip().rstrip(','))
 source = ROOT / 'kits/sheng/BootProgress.c'
@@ -31,7 +39,7 @@ while i < len(args):
     i += 1
 command += ['-DXNU_BOOT_PROGRESS=1', '-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror',
             '-I', str(ROOT / '.cache/xnu-work/osfmk'),
-            '-I', str(ROOT / 'uefi-sheng/Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib')]
+            '-I', str(UEFI / 'Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib')]
 subprocess.run(command, cwd=record['directory'], check=True, timeout=90)
 (OUT / 'compile-command.json').write_text(json.dumps(command,indent=2)+'\n')
 fault_source = ROOT / 'kits/sheng/BootFaultProbe.c'
@@ -71,7 +79,7 @@ subprocess.run(fw_command, cwd=policy_record['directory'], check=True, timeout=9
 
 archive = OUT / 'libBootProgress.a'
 archive.unlink(missing_ok=True)
-subprocess.run(['xcrun', 'ar', 'rcs', str(archive), str(obj), str(fault_obj), str(policy_obj), str(diag_obj), str(fw_obj)], check=True, timeout=30)
+subprocess.run([AR, 'rcs', str(archive), str(obj), str(fault_obj), str(policy_obj), str(diag_obj), str(fw_obj)], check=True, timeout=30)
 (OUT / 'build-report.json').write_text(json.dumps({
     'watchdog_policy_sha256': hashlib.sha256(policy_source.read_bytes()).hexdigest(),
     'diag_sha256': hashlib.sha256(diag_source.read_bytes()).hexdigest(),

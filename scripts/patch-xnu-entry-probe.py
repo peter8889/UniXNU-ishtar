@@ -181,6 +181,10 @@ def assemble_c(source, va, workdir, symbols):
     nm = shutil.which('llvm-nm') or '/opt/homebrew/opt/llvm/bin/llvm-nm'
     # UNIXNU_UEFI is the Mu-Silicium checkout when the unixnu driver runs this script.
     font_dir = Path(os.environ.get('UNIXNU_UEFI') or ROOT / 'uefi-sheng') / 'Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib'
+    if not (font_dir / 'Font.h').is_file():
+        raise SystemExit('Panic screen requires Mu-Silicium FrameBufferSerialPortLib/Font.h; '
+                         'set --uefi PATH or [build] uefi in unixnu.local.toml '
+                         '(UNIXNU_UEFI for direct script calls)')
     obj, elf, binary = (workdir / name for name in ('panic.o', 'panic.elf', 'panic.bin'))
     definitions = []
     for macro, name, width in (('MAX_MEM', '_max_mem', 8),
@@ -198,6 +202,21 @@ def assemble_c(source, va, workdir, symbols):
         if not any(base <= text and text + 256 <= base + size for base, size, _, _ in SEGMENTS):
             raise SystemExit('Invalid _boot_progress_panic_text')
         definitions.append(f'-DPANIC_TEXT={text:#x}UL')
+    # Optional: the physical aperture base. arm_vm_init() replaces the identity map with it,
+    # so the frame buffer's physical address stops being a kernel virtual address there; the
+    # screen adds this to reach the buffer through the aperture instead of faulting.
+    aperture = symbols.get('_physmap_base')
+    if aperture is not None:
+        if not any(base <= aperture and aperture + 8 <= base + size for base, size, _, _ in SEGMENTS):
+            raise SystemExit('Invalid _physmap_base')
+        definitions.append(f'-DPANIC_PHYSMAP={aperture:#x}UL')
+    # Optional: the board's panel geometry, used when this build has no display
+    # driver and PE_state.video is empty (UNIXNU_PANIC_FB="base,width,height,stride").
+    board_fb = os.environ.get('UNIXNU_PANIC_FB', '')
+    if board_fb:
+        fb_base, fb_width, fb_height, fb_stride = (int(value, 0) for value in board_fb.split(','))
+        definitions += [f'-DPANIC_FB_BASE={fb_base:#x}UL', f'-DPANIC_FB_WIDTH={fb_width}u',
+                        f'-DPANIC_FB_HEIGHT={fb_height}u', f'-DPANIC_FB_STRIDE={fb_stride}u']
     subprocess.run([clang, '--target=aarch64-none-elf', '-ffreestanding', '-fno-builtin', '-fno-stack-protector',
                     '-mgeneral-regs-only', '-fno-pic', '-mcmodel=tiny', '-Oz', f'-DVINFO={VINFO_VA:#x}UL',
                     *definitions, f'-I{font_dir}', '-c', source, '-o', obj], check=True)
@@ -349,6 +368,51 @@ def assemble(source, va, symbols, workdir):
     return binary.read_bytes()
 
 
+def band_source(band, aperture=None):
+    """Paint one 1/16 band after the patched call, then carry on where the call would have.
+
+    No arguments pointer is available deep inside the kernel, so the geometry the
+    board firmware programmed is baked in (1440x3200, 5760-byte rows, base 0xB8000000).
+    Only x0 is carried across the painting: it holds the call's return value, and every
+    other register the code after the call can use is callee-saved and therefore
+    untouched here. The cave is entered with a branch, so it must end with a branch to
+    the instruction after the original call - a `ret` would leave the enclosing
+    function instead. With aperture set, the base is reached through the physical
+    aperture, which is what arm_vm_init() leaves in place of the identity map.
+    """
+    rows = 3200 // 16
+    stride = 1440 * 4
+    base = 0xB8000000 + band * rows * stride
+    words = (rows * stride) // 8
+    aperture_add = ''
+    if aperture is not None:
+        aperture_add = f'  ldr x7, ={aperture:#x}\n  ldr x7, [x7]\n  add x1, x1, x7\n'
+    return f""".text
+.global _start
+_start:
+  stp x29, x30, [sp, #-32]!
+  bl callee
+  str x0, [sp, #16]
+  ldr x1, ={base:#x}
+{aperture_add}  at s1e1r, x1
+  isb
+  mrs x3, par_el1
+  tbnz w3, #0, 2f
+  ldr x2, ={words:#x}
+  mov w6, #-1
+1:
+  stp w6, w6, [x1], #8
+  subs x2, x2, #8
+  b.hi 1b
+  dsb sy
+2:
+  ldr x0, [sp, #16]
+  ldp x29, x30, [sp], #32
+  b target
+.ltorg
+"""
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('kernel', type=Path, help='the COPY of the kernel to patch in place')
@@ -356,7 +420,28 @@ def main():
     parser.add_argument('--reset-after', metavar='SYMBOL', help='place the reset after this call in arm_init instead of stage 3')
     parser.add_argument('--reset-before', action='store_true', help='reset at the call site before invoking SYMBOL (requires --reset-after)')
     parser.add_argument('--panic-screen', action='store_true', help='draw panic() messages on the screen')
+    parser.add_argument('--band-after', metavar='SYMBOL',
+                        help='paint a progress band after this call instead of resetting (no args pointer needed)')
+    parser.add_argument('--band', type=int, default=8, help='band index to paint, 1/16 of the height each')
+    parser.add_argument('--band-list', metavar='FUNC:SYMBOL:BAND[:ap]',
+                        help='paint up to three bands in one boot, comma separated; ":ap" reaches the frame '
+                             'buffer through the physical aperture for sites after arm_vm_init swaps TTBR0')
+    parser.add_argument('--reset-list', metavar='FUNC:SYMBOL:SECONDS',
+                        help='up to three PSCI resets in one boot, comma separated. Give the shallowest site '
+                             'the longest delay: the deepest site reached resets first, so the moment the '
+                             'device reboots names how far the kernel got')
+    parser.add_argument('--power-off', action='store_true',
+                        help='PSCI SYSTEM_OFF instead of SYSTEM_RESET: a probe that fires leaves the device off, '
+                             'which cannot be confused with the reboot a hang ends in')
     parser.add_argument('--no-reset', action='store_true', help='no reset probe at all')
+    parser.add_argument('--power-off-at', metavar='ADDR', action='append', default=[],
+                        help='power off when this exact instruction address runs. No symbol is needed and '
+                             'nothing has to be preserved because the probe never returns, so this reaches '
+                             'the lines between two calls')
+    parser.add_argument('--power-off-at-mmu', action='store_true',
+                        help='replace the magenta bar with a SYSTEM_OFF at the MMU enable. That site is '
+                             'certain to run, so the device staying off proves both the cave mechanism and '
+                             'that this platform implements PSCI SYSTEM_OFF')
     parser.add_argument('--occurrence', type=int, default=1, help='which call to SYMBOL (1 = first)')
     parser.add_argument('--in', dest='function', default='_arm_init', help='function that makes the call (default _arm_init)')
     args = parser.parse_args()
@@ -380,7 +465,73 @@ def main():
     # (site, cave stage, symbols the cave is linked with)
     sites = [(ENTRY_VA, 1, {'target': START_FIRST_CPU}),
              (MMU_ENABLE_VA, 2, {'target': MMU_ENABLE_VA + 4})]
-    if args.no_reset:
+    # cave stage -> (band index, aperture or None): those stages paint instead of resetting
+    band_sources = {}
+    # cave stage -> (ticks to wait, reset before the call): those stages reset
+    reset_sources = {}
+    if args.power_off_at:
+        if len(args.power_off_at) > 4:
+            raise SystemExit('--power-off-at takes at most four addresses')
+        sites = []
+        for index, text in enumerate(args.power_off_at):
+            va = int(text, 0)
+            if va % 4:
+                raise SystemExit(f'{va:#x} is not instruction aligned')
+            file_offset(va)  # refuses an address outside a file-backed segment
+            sites.append((va, 1 + index, {}))
+        description = 'power off at ' + ', '.join(f'{va:#x}' for va, _, _ in sites)
+    elif args.band_list:
+        # One boot answers several questions: the entry bar still proves the image reached
+        # the kernel, and caves 2..4 carry bands so no stage has to be wasted on the MMU bar.
+        sites = [(ENTRY_VA, 1, {'target': START_FIRST_CPU})]
+        entries = [entry for entry in args.band_list.split(',') if entry]
+        if not 1 <= len(entries) <= 3:
+            raise SystemExit('--band-list takes one to three FUNC:SYMBOL:BAND[:ap] entries')
+        symbols = kernel_symbols(args.kernel)
+        labels = []
+        for index, entry in enumerate(entries):
+            fields = entry.split(':')
+            if len(fields) not in (3, 4) or (len(fields) == 4 and fields[3] != 'ap'):
+                raise SystemExit(f'malformed --band-list entry: {entry}')
+            function, symbol, band = fields[0], fields[1], int(fields[2])
+            aperture = None
+            if len(fields) == 4:
+                aperture = kernel_names.get('_physmap_base')
+                if aperture is None:
+                    raise SystemExit('this kernel has no _physmap_base for the aperture band')
+            call_va, callee = find_call(data, symbols, function, symbol, 1)
+            stage = 2 + index
+            sites.append((call_va, stage, {'callee': callee, 'target': call_va + 4}))
+            band_sources[stage] = (band, aperture)
+            labels.append(f'band {band} after {symbol} in {function} (at {call_va:#x}{", aperture" if aperture else ""})')
+        description = '; '.join(labels)
+    elif args.reset_list:
+        # Shallow sites wait longer, so whichever site the kernel reaches deepest is the first
+        # to reset: the reboot time itself says how far the kernel got, one boot per bisection step.
+        sites = [(ENTRY_VA, 1, {'target': START_FIRST_CPU})]
+        entries = [entry for entry in args.reset_list.split(',') if entry]
+        if not 1 <= len(entries) <= 3:
+            raise SystemExit('--reset-list takes one to three FUNC:SYMBOL:SECONDS entries')
+        symbols = kernel_symbols(args.kernel)
+        labels = []
+        for index, entry in enumerate(entries):
+            fields = entry.split(':')
+            if len(fields) != 3:
+                raise SystemExit(f'malformed --reset-list entry: {entry}')
+            function, symbol, seconds = fields[0], fields[1], float(fields[2])
+            call_va, callee = find_call(data, symbols, function, symbol, 1)
+            stage = 2 + index
+            sites.append((call_va, stage, {'callee': callee, 'target': call_va + 4}))
+            reset_sources[stage] = int(seconds * TIMEBASE)
+            labels.append(f'{seconds:g}s after {symbol} in {function} (at {call_va:#x})')
+        description = 'reset ' + '; '.join(labels)
+    elif args.band_after:
+        symbols = kernel_symbols(args.kernel)
+        call_va, callee = find_call(data, symbols, args.function, args.band_after, args.occurrence)
+        sites.append((call_va, 4, {'callee': callee, 'target': call_va + 4}))
+        band_sources[4] = (args.band, None)
+        description = f'band {args.band} after call #{args.occurrence} to {args.band_after} in {args.function} (at {call_va:#x})'
+    elif args.no_reset:
         description = 'no reset probe'
     elif args.reset_after:
         symbols = kernel_symbols(args.kernel)
@@ -392,11 +543,30 @@ def main():
         description = f'stage 3 reset {args.reset_delay} s after the MMU is on'
 
     with tempfile.TemporaryDirectory() as tmp:
+        # The last cave in use may run to the end of the padding: the panic screen is the only
+        # thing that needs the space after it, and it is not drawn in this build then.
+        last_stage = max(stage for _, stage, _ in sites)
         for site, stage, symbols in sites:
-            source = RESET_BEFORE if (stage == 4 and args.reset_before) else SOURCES[stage].format(ticks=TIMEBASE * args.reset_delay)
+            if args.power_off_at:
+                source = RESET_BEFORE
+            elif args.power_off_at_mmu and stage == 2:
+                source = RESET_BEFORE
+            elif stage in band_sources:
+                band, aperture = band_sources[stage]
+                source = band_source(band, aperture)
+            elif stage in reset_sources:
+                source = SOURCES[4].format(ticks=reset_sources[stage])
+            elif stage == 4 and args.reset_before:
+                source = RESET_BEFORE
+            else:
+                source = SOURCES[stage].format(ticks=TIMEBASE * args.reset_delay)
+            if args.power_off:
+                # 0x84000008 is PSCI SYSTEM_OFF, 0x84000009 is SYSTEM_RESET.
+                source = source.replace('movz w0, #0x0009', 'movz w0, #0x0008')
             code = assemble(source, CAVES[stage], symbols, Path(tmp))
-            if len(code) > CAVE_SIZE:
-                raise SystemExit(f'Stage {stage} code is too large')
+            limit = CAVE_SIZE if (args.panic_screen or stage != last_stage) else PANIC_CAVE_END - CAVES[stage]
+            if len(code) > limit:
+                raise SystemExit(f'Stage {stage} code is {len(code):#x} bytes, the cave holds {limit:#x}')
             data[file_offset(CAVES[stage]):file_offset(CAVES[stage]) + len(code)] = code
     for site, stage, _ in sites:
         struct.pack_into('<I', data, file_offset(site), branch(site, CAVES[stage]))
@@ -420,7 +590,9 @@ def main():
         struct.pack_into('<I', data, file_offset(common), branch(common, common_entry))
         description += f', panic screen ({len(code):#x} bytes at {entry:#x}; common funnel at {common:#x})'
     args.kernel.write_bytes(data)
-    print(f'patched {args.kernel.name}: stage 1 blue bar, stage 2 magenta bar, {description}')
+    bars = [f'stage {stage} {"blue" if stage == 1 else "magenta"} bar'
+            for stage in (1, 2) if any(used == stage for _, used, _ in sites) and stage not in band_sources]
+    print(f'patched {args.kernel.name}: {", ".join(bars + [description])}')
 
 if __name__ == '__main__':
     main()
