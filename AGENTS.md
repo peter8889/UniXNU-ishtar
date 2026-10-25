@@ -67,3 +67,10 @@ allocator hand the framebuffer out.
 `gpu_defconfig` leaves `CONFIG_XNU_NATIVE_UFS`, `CONFIG_XNU_NATIVE_LEGACY_DISPLAY`
 and `CONFIG_XNU_NATIVE_MOBILE_DISPLAY` off. The device tree still enables those
 nodes so that turning a driver on is a configuration change. Keep that split.
+
+`patches/xnu/series` is intentionally empty: the board carries no XNU patch. A
+patch that made `cpu_init()` call `do_cpuid()` on every CPU was removed because
+`cpuid_info()` returns the single global `cpuid_cpu_info`, which `do_cpuid()`
+fills once on the boot CPU and stamps with `CPU_ARCH_ARMv8`. Secondary CPUs
+therefore already see a known architecture, and the extra call only risked a
+write into a section that is read-only after the late lockdown. Do not re-add it.
