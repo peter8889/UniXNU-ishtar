@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://t.me/petegroup"><img alt="Telegram" src="https://img.shields.io/badge/Telegram-@petegroup-26A5E4?logo=telegram&logoColor=white"></a>
+  <a href="https://t.me/petegroup"><img alt="Telegram" src="assets/telegram.svg"></a>
 </p>
 
 <p align="center">
