@@ -14,7 +14,7 @@ paths = ["board.toml", "feeds.toml", "configs/**", ".github/**", ".gitignore", "
 inputs = ["UniXNU branch ishtar/ios27 = feat/ipados27-gpu-parity 1cff985 + unixnu/0001-profiles-ios-27.0.1-24A446-iPhone17-2-D94AP.patch (profile ios-27.0.1-24A446).", "UniXNU-sm8550-common 23b2049 (feeds.toml), the pin of sheng's feat/ipados27-gpu-parity 0dac77e.", "iPhone17,2 iOS 27.0.1 24A446 IPSW; xnu-12377.121.6 (ac9718fb) public source."]
 configuration = ["board.os_profile = ios-27.0.1-24A446; board.soc_source = sm8550; board.kit = sheng (UniXNU build-sheng-source-storage.py and build-arm-driver.py read board sources from kits/sheng).", "kernel.defconfig = ishtar_ios27_defconfig (stage 0: CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n, CONFIG_XNU_NATIVE_ADRENO=n); config_fragments = arch common + os ios.config (no SoC fragment, as sheng's iPadOS 27 board).", "kernel.patch_series = arch, device:patches/xnu-12377/soc/series, os, device:patches/xnu-12377/series."]
 procedure = ["cd ../UniXNU && git switch ishtar/ios27 (or git am ../UniXNU-ishtar/unixnu/*.patch on feat/ipados27-gpu-parity).", "Copy local.toml.example to local.toml when the SoC checkout is local; otherwise ./unixnu fetch -D ../UniXNU-ishtar.", "~/miniconda3/bin/python3 ./unixnu defconfig ishtar_ios27_defconfig -D ../UniXNU-ishtar, then ./unixnu status --json -D ../UniXNU-ishtar."]
-findings = ["The resolver reads only UniXNU/profiles/os, so an OS profile cannot live in a device repository; the iOS profile is a UniXNU commit carried here as a patch.", "Every iOS 27.0.1 iPhone and iPad ships build 24A446, so the iPad profile's kernel source, Darwin 26 patches and OS series apply unchanged to the iPhone profile.", "UniXNU's CLI needs Python 3.11+ (tomllib); macOS /usr/bin/python3 is 3.9."]
+findings = ["The resolver reads only UniXNU/profiles/os, so an OS profile cannot live in a device repository; the iOS profile is a UniXNU commit carried here as a patch.", "Every iOS 27.0.1 iPhone and iPad ships build 24A446, so the iPad profile's kernel source, Darwin 26 patches and OS series apply unchanged to the iPhone profile.", "UniXNU's CLI needs Python 3.11+ (tomllib); macOS /usr/bin/python3 is 3.9.", "unixnu/0002 adds the ported AMFI init address and abi/original-classes.json to the profile; regenerate both patches with git format-patch -2 on ishtar/ios27 after any profile change."]
 completion = ["status resolves arch arm64e, SoC, ios-27.0.1-24A446 and this board; defconfig writes out/ishtar/ios-27.0.1-24A446/ishtar_ios27/.config; the patch order applies."]
 limits = ["The UniXNU branch ishtar/ios27 is local; publish it or apply unixnu/*.patch on another machine.", "Component revisions come from the UniXNU catalog of that branch; driver feat/ipados27-gpu-parity branches are not pinned separately."]
 next_action = ["Publish the UniXNU profile branch, then run ./unixnu fetch to write unixnu.lock."]
@@ -124,8 +124,8 @@ configuration = ["GopFramebuffer selected; CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n in
 procedure = ["Stage 1: build legacy-display-24A446 records for the iPhone17,2 kernelcache (image-assembly area), add build-gop-legacy-display-27.py and the offline-legacy-* args.", "Report 1320x2868 to iOS and let the DPU VIG scalers stretch it to 1440x3200, instead of the old CPU scaler.", "120 Hz: send the panel's wqhd_120hz timing-switch DCS sequence and drive frames from the tear-check vsync."]
 findings = ["Old port (old 2025): DPU page flip with double buffering in the 45 MB UEFI carve-out, both VIG pipes + one CTL flush, was tear-free (953 flips, 0 timeouts); GPU-written surfaces need dc civac before scanout.", "Old port: iOS powers the panel off after the lock screen and ishtar has no WLED, so the framebuffer was kept on (old 2009)."]
 completion = ["SpringBoard renders at the iPhone canvas, scaled to the full panel, with measured frame timing; then 120 Hz measured."]
-limits = ["The sheng legacy-display record and builder hold iPad17,3 addresses."]
-next_action = ["Generate the iPhone17,2 legacy-display record."]
+limits = ["abi/legacy-display-24A446-d94ap.json is ported; sheng's builder (build-gop-legacy-display-27.py) reads legacy-display-24A446.json beside itself, so stage 1 copies the builder into scripts/ with the ported record under that name."]
+next_action = ["Copy build-gop-legacy-display-27.py with the iPhone17,2 record and enable stage 1."]
 
 [[area.evidence]]
 kind = "device"
@@ -171,8 +171,8 @@ configuration = ["Components selected; CONFIG_XNU_NATIVE_ADRENO=n and no Adreno 
 procedure = ["Stage 3: regenerate the IOAccelerator base ABI for the iPhone17,2 kernelcache, add component:Adreno740, build-adreno740-kits.py, build-adreno740-accelerator.py, CONFIG_XNU_NATIVE_ADRENO=y.", "Supply ishtar's ZAP and GPU votes (sheng's ShengGmuVotes.c is for the same SoC cmd-db; verify on ishtar)."]
 findings = ["Old port: GMU firmware, HFI, GX, CP and zap all ran on ishtar (stages s1-s9), so power and firmware inputs are known good; the frame path was the weak part."]
 completion = ["Metal clients render on the A740 and SpringBoard composites on the GPU without stalls."]
-limits = ["UniXNU's IOAccelerator record (scripts/data/ioaccelerator-base-abi-24A446.json) holds iPad17,3 addresses."]
-next_action = ["Generate the iPhone17,2 IOAccelerator base ABI record after display works."]
+limits = ["abi/ioaccelerator-base-abi-24A446-d94ap.json is ported, but UniXNU build-adreno740-accelerator.py reads scripts/data/ioaccelerator-base-abi-24A446.json (iPad17,3) by fixed path; it needs a per-profile selection on the UniXNU branch."]
+next_action = ["Make build-adreno740-accelerator.py pick the record by kernelcache sha256, after display works."]
 
 [[area.evidence]]
 kind = "device"
@@ -239,14 +239,14 @@ result = "Old iOS 18 port, 2026-10-29: battmgr every 10 s: 82%, charging, 4.25 V
 id = "packaging"
 status = "host-verified"
 components = ["XnuPrelink", "DarwinBoot"]
-paths = ["patches/xnu-12377/*", "scripts/check-patch-series.py", "reports/**"]
+paths = ["patches/xnu-12377/*", "scripts/check-patch-series.py", "reports/patch-series-*"]
 inputs = ["iPhone17,2 27.0.1 24A446 (D94AP, chip 0x8140, board 14): kernelcache.release.iphone17 = xnu-13432.2.10~2/RELEASE_ARM64_T8140, MH_FILESET, 305 entries.", "Kernel: xnu-12377.121.6 + 64 arch + 2 SoC + 4 OS + 5 device patches."]
 configuration = ["Profile ios-27.0.1-24A446: kernelcache_sha256 fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95; prelink roots = iPad roots without com.apple.iokit.IOHIDEventDriver.", "Device series: sheng zzye cpu-idle, zzyf amp, zzyd audio-addon-mount (context), source-storage-runtime, zzzz ipados27-bringup (unchanged from sheng 0dac77e)."]
 procedure = ["scripts/ios-identity.py reads the IPSW over HTTP ranges and writes manifest, device tree and decompressed kernelcache to out/ios-identity.", "scripts/check-patch-series.py --xnu <xnu clone> dry-runs the resolved order.", "./unixnu build kernel, payload, bootimg (needs dtc, Xcode iphoneos SDK, lzfse/compression_tool)."]
-findings = ["sm8550-common 23b2049 has no xnu-12377 series and sheng's board reads an unpublished one; zzz-boot-progress.patch (OS layer) needs sheng-platform-power.patch first.", "The bring-up patch needs zzyd-sheng-audio-addon-mount.patch as context in kern_exec.c.", "Four records hold iPad17,3 kernelcache addresses and must be regenerated for iPhone17,2: UniXNU profile abi/original-classes.json, UniXNU scripts/data/ioaccelerator-base-abi-24A446.json, sheng scripts/legacy-display-24A446.json and hid-device-24A446.json; plus early_security_init."]
+findings = ["sm8550-common 23b2049 has no xnu-12377 series and sheng's board reads an unpublished one; zzz-boot-progress.patch (OS layer) needs sheng-platform-power.patch first.", "The bring-up patch needs zzyd-sheng-audio-addon-mount.patch as context in kern_exec.c.", "Four records held iPad17,3 kernelcache addresses (UniXNU profile abi/original-classes.json, UniXNU scripts/data/ioaccelerator-base-abi-24A446.json, sheng scripts/legacy-display-24A446.json and hid-device-24A446.json) plus early_security_init; all are ported to iPhone17,2 (area ios27-identity)."]
 completion = ["Kernel links, prelinks the iPhone17,2 kexts and boots to launchd."]
-limits = ["early_security_init and the root UUIDs/digests are REQUIRED placeholders in the profile.", "Nothing is built yet; dtc is required by ./unixnu payload."]
-next_action = ["Find the AMFI init wrapper in the iPhone17,2 kernelcache, then build the kernel."]
+limits = ["The profile's [root] UUIDs/digests are REQUIRED placeholders (AEA decryption needs the ipsw tool).", "Nothing is built yet; dtc is required by ./unixnu payload."]
+next_action = ["Build the stage 0 kernel (./unixnu build kernel) in CI or on a machine with the Xcode iphoneos SDK."]
 
 [[area.evidence]]
 kind = "host"
@@ -275,16 +275,23 @@ result = "UFS-backed boot log writer from sheng."
 
 [[area]]
 id = "ios27-identity"
-status = "planned"
+status = "host-verified"
 components = []
-paths = ["scripts/ios-identity.py"]
-inputs = ["D94AP device tree (Firmware/all_flash/DeviceTree.d94ap.im4p) and kernelcache from the iPhone17,2 IPSW."]
-configuration = ["Profile [adt.root] model iPhone17,2, target-type D94, compatible D94AP; [adt.product] phone idiom, subtype 2868, @3x, island-notch-location 144, display-corner-radius, APPLE9."]
-procedure = ["For each iPad17,3 record, locate the same class or function in the iPhone17,2 kernelcache (same build, same source; slots, field offsets and PAC diversities are expected to match, addresses differ) and write the iPhone record next to the iPad one."]
-findings = ["The iPhone17,2 fileset has IOMobileFramebufferLegacy, IOHIDEventDriver (in IOHIDFamily) and _initializeAppleMobileFileIntegrity; it has no com.apple.iokit.IOHIDEventDriver bundle."]
-completion = ["All four ABI records and early_security_init exist for iPhone17,2 and pass sheng/UniXNU's check-* scripts."]
-limits = ["No address has been located yet."]
-next_action = ["Write a matcher that maps iPad17,3 addresses to iPhone17,2 by masked instruction bytes."]
+paths = ["scripts/ios-identity.py", "scripts/kc-port.py", "abi/**", "reports/kc-port-*"]
+inputs = ["D94AP device tree (Firmware/all_flash/DeviceTree.d94ap.im4p) and kernelcache from the iPhone17,2 IPSW.", "iPad17,3 24A446 kernelcache (sha256 38e6d9fa..., matches the iPad profile pin) and the four iPad records."]
+configuration = ["Profile [adt.root] model iPhone17,2, target-type D94, compatible D94AP; [adt.product] phone idiom, subtype 2868, @3x, island-notch-location 144, display-corner-radius, APPLE9.", "Profile early_security_init = com.apple.driver.AppleMobileFileIntegrity=0xfffffff00921000c; profile abi/original-classes.json ported.", "abi/legacy-display-24A446-d94ap.json, abi/hid-device-24A446-d94ap.json, abi/ioaccelerator-base-abi-24A446-d94ap.json: collection_slide 0x0, kernelcache_sha256 fa07057b..."]
+procedure = ["python3 scripts/ios-identity.py (iPhone17,2) and --product iPad17,3 --out out/ios-identity-ipad17,3 (system python: miniconda's lacks the CA chain here).", "scripts/kc-port.py OLD_KC NEW_KC --record <iPad record> --out abi/<name>-d94ap.json; bare addresses print their ported value."]
+findings = ["Kexts are identical binaries in both filesets: every kext address ported by (entry, segment, offset) and verified; only kernel functions (com.apple.kernel is compiled per SoC) needed the masked search or vtable reads.", "The iPhone17,2 fileset is linked at 0xfffffff007004000, XNU's link address, so the collection slide is 0 (iPad17,3: 0x1f000000000).", "Sheng's legacy-display record keeps its own diversities for pure-virtual slots 214, 216, 257; both kernelcaches agree with each other there, so the record's values are kept.", "Cross-checks hold on iPhone17,2: legacy-display and hid-device vtables = original-classes vtables + 0x10; IOAccelerator slot 7 = get_meta_class, whose ADRP+ADD yields the ported metaclass.", "The iPhone17,2 fileset has IOMobileFramebufferLegacy, IOHIDEventDriver (in IOHIDFamily) and _initializeAppleMobileFileIntegrity; it has no com.apple.iokit.IOHIDEventDriver bundle."]
+completion = ["All four ABI records and early_security_init exist for iPhone17,2 with 0 porting failures; then the builders that read them accept them."]
+limits = ["The builders (legacy display, HID, IOAccelerator) have not been run with the ported records."]
+next_action = ["Run sheng's build-gop-legacy-display-27.py with the iPhone17,2 record in the stage 1 tree."]
+
+[[area.evidence]]
+kind = "host"
+reference = "reports/kc-port-24A446-d94ap.txt"
+command = "~/miniconda3/bin/python3 scripts/kc-port.py out/ios-identity-ipad17,3/kernelcache.decompressed out/ios-identity/kernelcache.decompressed --record <each iPad record>"
+revision = "b4ef8adb970255478914ae911d2d6c65daf79343"
+result = "2026-10-29: AMFI init 0xfffffe00092551ac -> 0xfffffff00921000c; legacy-display 20, hid-device 8, original-classes 22, IOAccelerator 5 addresses plus all vtable slots ported, 0 failed."
 
 [[area.evidence]]
 kind = "source"

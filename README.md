@@ -43,18 +43,23 @@ Board tools in this repository (stdlib Python, no installs):
 
 ```sh
 python3 scripts/dtb2dts.py <dtbo.img> --list                  # decompile stock DTB/DTBO without dtc
-$PY scripts/ios-identity.py                                   # iPhone17,2 manifest, device tree, kernelcache (HTTP ranges)
+python3 scripts/ios-identity.py                               # iPhone17,2 manifest, device tree, kernelcache (HTTP ranges)
 $PY scripts/check-patch-series.py --xnu ../ref-src/xnu-12377  # dry-run the 75-patch order
+$PY scripts/kc-port.py <iPad kc> <iPhone kc> --record <iPad record> --out abi/<name>-d94ap.json
 ```
+
+`abi/` holds the iPhone17,2 versions of sheng's and UniXNU's iPad17,3 kernelcache records (ported, 0 failures:
+[reports/kc-port-24A446-d94ap.txt](reports/kc-port-24A446-d94ap.txt)); the profile carries the ported
+`original-classes.json` and AMFI init address.
 
 ## Stages
 
 | Stage | Adds | Blocked on |
 | --- | --- | --- |
-| 0 | kernel, UFS root, launchd, verbose console | profile `early_security_init`, `[root]` UUIDs, Data volume UUID |
-| 1 | display (`build-gop-legacy-display-27.py`, `offline-legacy-*`) | iPhone17,2 `legacy-display` record |
-| 2 | touch (FTM5 over GPI) and keys | port of old 2010-2019; iPhone17,2 `hid-device` record |
-| 3 | A740 (UniXNU Adreno740/AdrenoMetal) | iPhone17,2 IOAccelerator base ABI record |
+| 0 | kernel, UFS root, launchd, verbose console | profile `[root]` UUIDs, Data volume UUID, a kernel build |
+| 1 | display (`build-gop-legacy-display-27.py`, `offline-legacy-*`) | copying the builder with `abi/legacy-display-24A446-d94ap.json` |
+| 2 | touch (FTM5 over GPI) and keys | port of old 2010-2019 (record: `abi/hid-device-24A446-d94ap.json`) |
+| 3 | A740 (UniXNU Adreno740/AdrenoMetal) | UniXNU accelerator builder reading `abi/ioaccelerator-base-abi-24A446-d94ap.json` |
 | 4 | DPU scaling and 120 Hz, battery, USB Ethernet, Wi-Fi | ports of old 2025, 2035, 2012 |
 
 Running the payload's userdata step writes the iOS images into `userdata` and **erases Android user data**.

@@ -37,16 +37,16 @@ by UniXNU/sheng code, ported as a board component, or dropped.
 | `uefi/darwinboot-32mb-block.patch` | 32 MiB kernel placement for 16 KiB pages | not needed with 4 KiB pages | dropped |
 | `gpu/adrenometal-0001-ios18.patch` | iOS 18 Metal plugin ABI | UniXNU AdrenoMetal | dropped |
 
-## iPhone17,2 records still to produce
+## iPhone17,2 records
 
-Same build as the iPad profile, so class layouts, vtable slot numbers and PAC diversities are expected to match;
-only addresses move. Kernelcache: `out/ios-identity/kernelcache.decompressed` (from `scripts/ios-identity.py`).
+Same build as the iPad profile, so class layouts, vtable slot numbers and PAC diversities match; only addresses
+move. `scripts/kc-port.py` ported all of them with 0 failures ([report](../reports/kc-port-24A446-d94ap.txt)).
 
-| Record | iPad17,3 source | Used by | Stage |
-| --- | --- | --- | --- |
-| `early_security_init` (AMFI init wrapper) | `UniXNU/profiles/os/ipados-27.0.1-24A446/profile.toml` | prelink | 0 |
-| `[root]` volume UUIDs and digests | same profile | payload, root policies | 0 |
-| `legacy-display-24A446.json` | `UniXNU-sheng/scripts/` | `build-gop-legacy-display-27.py` | 1 |
-| `hid-device-24A446.json` | `UniXNU-sheng/scripts/` | HID input archive | 2 |
-| `abi/original-classes.json` | iPad profile | UniXNU check scripts | 1-2 |
-| `ioaccelerator-base-abi-24A446.json` | `UniXNU/scripts/data/` | `build-adreno740-accelerator.py` | 3 |
+| Record | iPad17,3 source | iPhone17,2 record | Used by | Stage |
+| --- | --- | --- | --- | --- |
+| `early_security_init` | iPad profile | `0xfffffff00921000c` in the ios profile | prelink | 0 |
+| `[root]` volume UUIDs and digests | iPad profile | REQUIRED (needs AEA decryption) | payload, root policies | 0 |
+| `legacy-display-24A446.json` | `UniXNU-sheng/scripts/` | `abi/legacy-display-24A446-d94ap.json` | `build-gop-legacy-display-27.py` | 1 |
+| `hid-device-24A446.json` | `UniXNU-sheng/scripts/` | `abi/hid-device-24A446-d94ap.json` | HID input archive | 2 |
+| `abi/original-classes.json` | iPad profile | ios profile `abi/original-classes.json` | UniXNU check scripts | 1-2 |
+| `ioaccelerator-base-abi-24A446.json` | `UniXNU/scripts/data/` | `abi/ioaccelerator-base-abi-24A446-d94ap.json` | `build-adreno740-accelerator.py` | 3 |
