@@ -12,11 +12,11 @@
 
 
 ["userdata"]
-# LUN 0 GPT entry "userdata" (sda30), 4096-byte blocks. first_lba measured by the old port's UFS probe
-# (ishtar 2008: "first block 0x2f3040, 229483 MiB"). last_lba is derived from the MiB count, so it can be up to 255
-# blocks short: confirm with `adb shell cat /sys/block/sda/sda30/start /sys/block/sda/sda30/size` (512-byte sectors).
-"first_lba" = 3092544
-"last_lba" = 61840191
+# LUN 0 GPT entry "userdata" (sda30), 4096-byte blocks. Measured on the phone (Android, root, 2026-10-29):
+# /sys/block/sda/sda30 start 24756736, size 469982680 (512-byte sectors) -> blocks 3094592..61842426 (229484 MiB).
+# The old port's 0x2f3040 (3092544) was 2048 blocks (8 MiB) early; the stock ROM GPT agrees with the live start.
+"first_lba" = 3094592
+"last_lba" = 61842426
 "lba_bytes" = 4096
 
 
