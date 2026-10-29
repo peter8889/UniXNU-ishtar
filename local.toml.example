@@ -1,0 +1,5 @@
+# Copy to local.toml (ignored) for machine-specific source overrides. Relative paths resolve from this file.
+# [[source]]
+# kind = "soc"
+# name = "sm8550"
+# local = "../UniXNU-sm8550-common"

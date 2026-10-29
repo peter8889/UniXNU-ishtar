@@ -1,0 +1,43 @@
+# Build outputs and caches
+/build/
+/Build/
+/Conf/
+/out/
+/.cache/
+/refer/
+/.local*/
+# Decompiled stock DTs and other local references (scripts/dtb2dts.py output)
+/ref/
+
+# Local development files
+*.log
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Apple, Qualcomm and Xiaomi binaries never go in Git
+*.ipsw
+*.dmg
+*.aea
+*.im4p
+*.img
+*.dbr
+*.macho
+*.o
+*.a
+*.dylib
+*.efi
+*.dtb
+*.dtbo
+*.bin
+*.mbn
+*.fw
+*.ftb
+*.pem
+*.key
+.env
+local.toml

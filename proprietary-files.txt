@@ -1,0 +1,12 @@
+# Firmware paths and SHA-256 digests, written under .cache/firmware/. Format: path|sha256; prefix - for optional.
+# No entry is active yet: the stock dump (HyperOS OS3.0.308.0.WMACNXM, old repo scripts/extract-stock.sh) is not on
+# the build machine. Add each line with its digest when the stage that needs it starts.
+#
+# GPU (stage 3): ishtar's signed ZAP. Stock /odm/firmware/a740_zap.mbn (+ .b00-.b02 merged); the /vendor split copy
+#   is refused by TZ with 0xffcfffbb (old port, 2026-10-27). GMU and SQE are the shared linux-firmware files.
+# a740_zap.mbn|REQUIRED_SHA256
+#
+# ADSP (power/audio): adsp.mdt + adsp.b* and adsp_dtb.mdt + adsp_dtb.b* from the modem_a FAT /image (sheng loads them
+#   in place from XNU; the old ishtar port relied on UEFI uefipil.cfg [AUTO] FULL_ADSP instead).
+#
+# Touch: none. The FTM5 runs its own firmware (FW VER 0015); st_fts_m1.ftb is only needed to reflash it.

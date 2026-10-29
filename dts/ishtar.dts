@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Xiaomi 13 Ultra (ishtar), SM8550-AB v2 (msm-id 0x207 rev 2, miboard-id 5).
+// Board values: stock overlay dtbo.img entry 06 ("8550 ishtar") + kalama-v2.dtb, decompiled by scripts/dtb2dts.py.
+/dts-v1/;
+/include/ "sm8550.dtsi"
+
+/ {
+    model = "Xiaomi 13 Ultra";
+    compatible = "xiaomi,ishtar", "qcom,sm8550";
+
+    // Nominal handoff range, as sheng. DarwinBoot owns the contiguous window of [payload.adt] owned_memory_size
+    // from the UEFI memory map (ishtar's largest run: 0x8c0000000-0xaffffefff, 9 GiB, HyperOS /proc/iomem).
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0 0x80000000 0 0x80000000>;
+    };
+
+    reserved-memory {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        ranges;
+        // Stock splash_region: 1440x3200 continuous-splash framebuffer, same address and size as sheng.
+        splash_region: framebuffer@b8000000 {
+            label = "cont_splash_region";
+            reg = <0 0xb8000000 0 0x2b00000>;
+            no-map;
+        };
+    };
+};
+
+// cpu0-2 Cortex-A510 (E), cpu3-4 A715, cpu5-6 A710, cpu7 X3 (P); MPIDR Aff1 0x000-0x700.
+&cpu0 { unixnu,cluster-type = "E"; };
+&cpu1 { unixnu,cluster-type = "E"; };
+&cpu2 { unixnu,cluster-type = "E"; };
+&cpu3 { unixnu,cluster-type = "P"; };
+&cpu4 { unixnu,cluster-type = "P"; };
+&cpu5 { unixnu,cluster-type = "P"; };
+&cpu6 { unixnu,cluster-type = "P"; };
+&cpu7 { unixnu,cluster-type = "P"; };
+// UFS 4.0; userdata is LUN 0 (sda30), found through the GPT by ShengUfs.
+&ufs { status = "okay"; };
+&ufsphy { status = "okay"; };
+&gpu { status = "okay"; };
+&gmu { status = "okay"; };
+&gpu_smmu { status = "okay"; };

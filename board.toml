@@ -1,0 +1,138 @@
+"schema_version" = 2
+
+["board"]
+"name" = "ishtar"
+"soc" = "SM8550"
+"description" = "Xiaomi 13 Ultra"
+# The package must appear as kits/sheng: UniXNU's build-sheng-source-storage.py and build-arm-driver.py (NativeAdreno)
+# read board sources from that fixed path. Keep this until those scripts take board.kit.
+"kit" = "sheng"
+"soc_source" = "sm8550"
+# UniXNU branch ishtar/ios27 (local, based on feat/ipados27-gpu-parity 1cff985) adds this profile.
+"os_profile" = "ios-27.0.1-24A446"
+
+
+["userdata"]
+# LUN 0 GPT entry "userdata" (sda30), 4096-byte blocks. first_lba measured by the old port's UFS probe
+# (ishtar 2008: "first block 0x2f3040, 229483 MiB"). last_lba is derived from the MiB count, so it can be up to 255
+# blocks short: confirm with `adb shell cat /sys/block/sda/sda30/start /sys/block/sda/sda30/size` (512-byte sectors).
+"first_lba" = 3092544
+"last_lba" = 61840191
+"lba_bytes" = 4096
+
+
+["kernel"]
+"defconfig" = "ishtar_ios27_defconfig"
+# Stage 0: no display binding and no A740 archives (their ABI records are iPad17,3; see porting.toml image-assembly).
+# Stage 1 adds "build-gop-legacy-display-27.py"; stage 3 adds "component:Adreno740", "build-adreno740-kits.py",
+# "build-adreno740-accelerator.py".
+"archives" = ["build-corecrypto-14.py", "build-corecrypto-14.py --namespace", "component:ArmDTPlatform", "component:ArmCpu", "build-libpthread-kernel.py", "component:ShengUfs", "component:RamBlock", "component:AppleKeyStoreState"]
+"config_fragments" = ["arch:configs/common.config", "os:configs/ios.config"]
+# The SoC layer comes from this repo until UniXNU-sm8550-common publishes patches/xnu-12377/series.
+"patch_series" = ["arch:patches/xnu/series", "device:patches/xnu-12377/soc/series", "os:patches/xnu/series", "device:patches/xnu-12377/series"]
+
+
+["firmware"]
+# ../uefi-ishtar: Mu-Silicium fork from wh1stl3/uefi-nuwa (ishtarPkg). It must embed UniXNU, UniXNUDxe, DarwinBoot,
+# UniXNURamDiskDxe, DiskIoDxe and FAT (https://unixnu.com/porting/uefi-firmware#required-integration).
+"config" = "ishtar"
+"dsc" = "Platforms/Xiaomi/ishtarPkg/ishtar.dsc"
+"fd" = "Build/ishtarPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd"
+"submodules" = ["Binaries", "Mu_Basecore", "Common/Mu", "Common/Mu_OEM_Sample", "Silicium-ACPI", "Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl"]
+"packages" = ["{uefi}", "{uefi}/Platforms/Xiaomi", "{tree}/package", "{tree}/drivers/DarwinBoot", "{edk2}", "{uefi}/Common/Mu", "{uefi}/Common/Mu_OEM_Sample", "{uefi}/Mu_Basecore", "{uefi}/Silicon/Qualcomm", "{uefi}/Silicon/Silicium", "{uefi}/Silicium-ACPI", "{uefi}/Silicium-ACPI/Platforms/Xiaomi", "{uefi}/Silicium-ACPI/Silicon/Qualcomm"]
+
+["firmware"."defines"]
+"ENABLE_SECUREBOOT" = "0"
+"DEVICE_MODEL" = "ishtar"
+"MEMORY_PROTECTION" = "TRUE"
+"SHIP_MODE" = "FALSE"
+"BUILDID_STRING" = "ishtar-ios27"
+
+
+["payload"]
+"volume" = "ISHTARESP"
+"size_mib" = 176
+"root_policies" = "{tree}/build/sheng-source-storage/root-policies.bin"
+"loader" = "firmware"
+"title" = "iOS 27"
+"dram_size" = "0x80000000"
+"skip_setup_tool" = "scripts/seed-data-skip-setup.py"
+"panic_screen" = true
+# Stage 0: sheng's minimal iOS 26/27 arguments plus the UFS root. Board input (ishtar-touch, ishtar-keys) and the
+# offline-legacy-* display arguments are added with their stages.
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "-no_slto_panic", "use_contiguous_hint=0", "native-source-storage=1", "native-ufs-root=1"]
+
+["payload"."install"]
+"title" = "Install and boot"
+"confirm" = "ERASE all iOS user data and install again?"
+"confirm_titles" = ["Erase Data, skip Hello, boot", "Erase Data, show Hello, boot"]
+# ShengUfs reads these argument names.
+"confirm_args" = ["sheng-data-reset=1", "sheng-data-reset=2"]
+
+["payload"."adt"]
+# SM8550 SoC id (0x207); same value as sheng.
+"chip_id" = "207"
+# sheng's proven window (4.75 GiB). ishtar's map has a 9 GiB run and the old port booted with 8 GiB (0x200000000).
+"owned_memory_size" = "0x130000000"
+"packed_data_ramdisk" = true
+"persistent_data" = true
+"unique_chip_id" = "required"
+
+
+["bootimg"]
+"dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xb8000000", "0x0", "0x2b00000"] }] }]
+
+["bootimg"."image"]
+# From uefi-ishtar Resources/Configs/ishtar.toml (inherited from nuwa); the old port boots with these.
+"header_version" = 1
+"pagesize" = 4096
+
+
+["device_tree"]
+"source" = "device:dts/ishtar.dts"
+"include_dirs" = ["soc:dts"]
+
+
+["components"]
+"include" = ["ArmDTPlatform", "ArmCpu", "XnuPrelink", "DarwinBoot", "ShengUfs", "RamBlock", "GopFramebuffer", "AppleKeyStoreState", "Adreno740", "AdrenoMetal"]
+
+
+["adt"]
+
+["adt"."product"]
+
+["adt"."product"."string"]
+# The framebuffer path is 8-bit, as on sheng; the panel itself is a P3 OLED.
+"artwork-display-gamut" = "sRGB"
+
+
+["adt"."defaults"]
+
+["adt"."defaults"."u32"]
+"sleep-disabled" = 1
+# No Apple PMGR or SEP: report a virtual platform, so AMFI does not wait for an ApplePMGRNub.
+"vmm-present" = 1
+# memory/64K + 1024 for the owned 4864 MiB (sheng's derivation; recompute when owned_memory_size changes).
+"kern.maxvnodes" = 78848
+
+
+["adt"."chosen"]
+
+["adt"."chosen"."u32"]
+# No CTRR on SM8550.
+"kernel-ctrr-to-be-enabled" = 0
+
+["adt"."buttons"]
+
+["adt"."buttons"."string"]
+"compatible" = "buttons"
+"device_type" = "buttons"
+
+
+["adt"."buttons"."strings"]
+# ishtar has power (PMK8550 KPDPWR), volume down (RESIN) and volume up (PM8550 GPIO6); no action or capture button.
+"button-names" = ["hold", "voldown", "volup"]
+
+
+["adt"."buttons"."u32"]
+"home-button-type" = 2

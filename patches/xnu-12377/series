@@ -1,0 +1,9 @@
+# ishtar device layer for xnu-12377 (iOS 27.0.1 24A446), one patch per line in application order.
+# Copied unchanged from UniXNU-sheng feat/ipados27-gpu-parity 0dac77e (patches/xnu-12377); file names and boot-args
+# (sheng-*) are kept so upstream diffs stay comparable. Order matches sheng's series.
+zzye-sheng-cpu-idle.patch
+zzyf-sheng-amp.patch
+# Needed as context by the bring-up patch (kern_exec.c); it only mounts an addon image when one is supplied.
+zzyd-sheng-audio-addon-mount.patch
+source-storage-runtime.patch
+zzzz-sheng-ipados27-bringup.patch

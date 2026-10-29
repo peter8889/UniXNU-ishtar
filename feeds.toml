@@ -1,0 +1,7 @@
+# SM8550 shared support. 23b2049 is what sheng's feat/ipados27-gpu-parity pins; it has no xnu-12377 series, so
+# this repo carries the SoC layer in patches/xnu-12377/soc (board.toml kernel.patch_series).
+[[source]]
+kind = "soc"
+name = "sm8550"
+git = "https://github.com/UniXNU/UniXNU-sm8550-common.git"
+commit = "23b2049fcd9e30356161def84231334fb55ecca9"
