@@ -808,6 +808,55 @@
       "original_sha256": "f6ccc88eded4f6ed253717fb648f6872e86b9999797cee8916122e595331f726",
       "native_symbol": "_strncasecmp",
       "evidence": "(s1, s2, n): returns 0 for n == 0, else folds A-Z to lower case on both sides and compares bytes until a difference, NUL or n: libkern/stdio string.c strncasecmp, right after the matched _strcasecmp (next: the 4-argument strbufcasecmp). Called by sandbox, apfs, AppleARMPlatform, IOMobileGraphicsFamily."
+    },
+    {
+      "original": "0xfffffff00b24f070",
+      "original_size": 44,
+      "original_sha256": "27e53dbbbf46e05f049eb579233d131cead74d11527edbadbdcef934d1c6f18c",
+      "native_symbol": "__ZN8OSObjectC2Ev",
+      "evidence": "OSObject::OSObject() base: stores the PAC-signed (pacda, discriminator 0xcda1) OSObject vtable at +0 and retainCount 1 at +8. One of four identical constructors between the matched OSObject_typed_operator_delete and OSObject::iterateObjects, in the order of the symbol-bearing RELEASE+LTO reference (C2Ev, C1Ev, C2EPK11OSMetaClass, C1EPK11OSMetaClass). Called by 12 kexts (CoreAnalyticsFamily trap)."
+    },
+    {
+      "original": "0xfffffff00b24f09c",
+      "original_size": 44,
+      "original_sha256": "27e53dbbbf46e05f049eb579233d131cead74d11527edbadbdcef934d1c6f18c",
+      "native_symbol": "__ZN8OSObjectC1Ev",
+      "evidence": "OSObject::OSObject() complete: stores the PAC-signed (pacda, discriminator 0xcda1) OSObject vtable at +0 and retainCount 1 at +8. One of four identical constructors between the matched OSObject_typed_operator_delete and OSObject::iterateObjects, in the order of the symbol-bearing RELEASE+LTO reference (C2Ev, C1Ev, C2EPK11OSMetaClass, C1EPK11OSMetaClass). Called by 12 kexts (CoreAnalyticsFamily trap)."
+    },
+    {
+      "original": "0xfffffff00b24f0c8",
+      "original_size": 44,
+      "original_sha256": "27e53dbbbf46e05f049eb579233d131cead74d11527edbadbdcef934d1c6f18c",
+      "native_symbol": "__ZN8OSObjectC2EPK11OSMetaClass",
+      "evidence": "OSObject::OSObject(const OSMetaClass *) base: stores the PAC-signed (pacda, discriminator 0xcda1) OSObject vtable at +0 and retainCount 1 at +8. One of four identical constructors between the matched OSObject_typed_operator_delete and OSObject::iterateObjects, in the order of the symbol-bearing RELEASE+LTO reference (C2Ev, C1Ev, C2EPK11OSMetaClass, C1EPK11OSMetaClass). Called by 12 kexts (CoreAnalyticsFamily trap)."
+    },
+    {
+      "original": "0xfffffff00b24f0f4",
+      "original_size": 44,
+      "original_sha256": "27e53dbbbf46e05f049eb579233d131cead74d11527edbadbdcef934d1c6f18c",
+      "native_symbol": "__ZN8OSObjectC1EPK11OSMetaClass",
+      "evidence": "OSObject::OSObject(const OSMetaClass *) complete: stores the PAC-signed (pacda, discriminator 0xcda1) OSObject vtable at +0 and retainCount 1 at +8. One of four identical constructors between the matched OSObject_typed_operator_delete and OSObject::iterateObjects, in the order of the symbol-bearing RELEASE+LTO reference (C2Ev, C1Ev, C2EPK11OSMetaClass, C1EPK11OSMetaClass). Called by 12 kexts (CoreAnalyticsFamily trap)."
+    },
+    {
+      "original": "0xfffffff00b3d1738",
+      "original_size": 44,
+      "original_sha256": "3d79ee9425d008d5ad022de036c2aca8bf7519a61361858c47a05fb74b4cfbc1",
+      "native_symbol": "_PE_i_can_has_debugger",
+      "evidence": "(uint32_t *debug_flags): if non-NULL stores debug_boot_arg, or 0 when the debug enable word is 0, then returns that word; follows the matched _PE_call_timebase_callback as in pexpert/arm/pe_init.c. Called by 11 kexts."
+    },
+    {
+      "original": "0xfffffff00b3d1764",
+      "original_size": 16,
+      "original_sha256": "8e24c02707b85078ffdf325aeca01a7e5a71633ef56ecccaaf39a0a78ee00e6c",
+      "native_symbol": "_PE_panic_debugging_enabled",
+      "evidence": "Returns one constant word; directly before the matched _PE_update_panic_crc, where pexpert/arm/pe_init.c has PE_panic_debugging_enabled."
+    },
+    {
+      "original": "0xfffffff00ab86b10",
+      "original_size": 52,
+      "original_sha256": "964bde8ab9402cea559d37b4392e351f2ce9065ecd5d9339d68ed93421373201",
+      "native_symbol": "_clock_get_uptime",
+      "evidence": "(uint64_t *result): *result = CNTVCTSS_EL0 + the per-CPU timebase offset (the mach_absolute_time read); follows the matched _mach_continuous_time. Called by 8 kexts."
     }
   ],
   "data": [
