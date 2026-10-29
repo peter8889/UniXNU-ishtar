@@ -4,7 +4,7 @@ schema_version = 1
 name = "ishtar"
 soc = "SM8550"
 os_profile = "ios-27.0.1-24A446"
-summary = "Xiaomi 13 Ultra (SM8550-AB) runs iOS 27.0.1 24A446 as an iPhone 16 Pro Max (iPhone17,2, D94AP) on UniXNU's xnu-12377 kernel, reusing shared SM8550 and sheng iPadOS 27 support. Hardware facts and device results of the earlier iOS 18 port (markakash/UniXNU-ishtar 79ddf457) are cited where they carry over; nothing in this repository has booted yet."
+summary = "Xiaomi 13 Ultra (SM8550-AB) runs iOS 27.0.1 24A446 as an iPhone 16 Pro Max (iPhone17,2, D94AP) on UniXNU's xnu-12377 kernel, reusing shared SM8550 and sheng iPadOS 27 support. Hardware facts and device results of the earlier iOS 18 port (markakash/UniXNU-ishtar-old 79ddf457) are cited where they carry over; nothing in this repository has booted yet."
 
 [[area]]
 id = "configuration"
@@ -30,18 +30,18 @@ result = "2026-10-29, after syncing sheng 6ed0ba4 and UniXNU 87bf1f9: status res
 id = "firmware"
 status = "planned"
 components = ["DarwinBoot"]
-paths = ["proprietary-files.txt", "scripts/dtb2dts.py"]
-inputs = ["../uefi-ishtar: Mu-Silicium fork of wh1stl3/uefi-nuwa with ishtarPkg (not on the current build machine).", "Stock DTB/DTBO: AOSPA android_device_xiaomi_ishtar-kernel vauxite bd593b3 dtbs/kalama-v2.dtb + dtbo.img entry 06 (msm-id 0x207 rev 2, board-id 0x10008, xiaomi,miboard-id 5)."]
-configuration = ["firmware.config = ishtar; dsc = Platforms/Xiaomi/ishtarPkg/ishtar.dsc; ENABLE_SECUREBOOT = 0; no Mu patches (sheng's Gic-Spurious.patch belongs to uefi-sheng).", "bootimg.image header_version 1, pagesize 4096; bootimg.dtb_node splash_region 0xb8000000+0x2b00000."]
-procedure = ["Add UniXNURamDiskDxe, UniXNUDxe, DiskIoDxe and FAT to uefi-ishtar (https://unixnu.com/porting/uefi-firmware#required-integration; uefi-sheng 34c9880 'use the shared UniXNU RAM disk driver' is the reference change); its UniXNU menu and DarwinBoot already run.", "./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar; ./unixnu bootimg ... --dtb <stock kalama-v2.dtb>.", "Decompile stock trees with scripts/dtb2dts.py (no dtc needed): dtbo.img --list, --entry 6."]
-findings = ["Old port: uefipil.cfg needed #ABL in [AUTO] and the DXE heap at 0xBAE00000+0x0D1C0000 (sheng's size) to reach the UniXNU menu; ADSP is started by UEFI ([AUTO] FULL_ADSP).", "The 16 KiB-page iOS 18 kernel needed DarwinBoot to place kernels on 32 MiB boundaries (old uefi/darwinboot-32mb-block.patch); the arm64e profile is 4 KiB-page, so that patch is not carried.", "AOSPA's dtbo.img holds all SM8550 Xiaomi boards; ishtar entries are 06-08, sheng 50-52. Entry 06 matches this unit (msm 0x207 v2, miboard 5)."]
-completion = ["uefi-ishtar builds with the payload RAM disk, lists the iOS 27 entry and hands the GOP framebuffer and memory map to DarwinBoot."]
-limits = ["uefi-ishtar and the stock firmware dump are not on the build machine used for this record.", "proprietary-files.txt has no active entries yet."]
-next_action = ["Integrate UniXNURamDiskDxe in uefi-ishtar and record its commit and the handoff memory map."]
+paths = ["proprietary-files.txt", "scripts/dtb2dts.py", "firmware/**"]
+inputs = ["../uefi-ishtar: UniXNU/uefi-sheng 20ac23d plus ishtarPkg, branch ishtar 178bb0b (local; publish with the device repo).", "Binaries/nuwa (Project-Silicium Device-Binaries, pinned by uefi-sheng): the Kailua UEFI build ishtar ships, including panel Panel_M1_42_02_0a_ltpo_dsc_cmd.xml (1440x3200, DSIRefreshRate 0x3C0000 = 60 Hz).", "Boot-image DTB: the live ishtar FDT (/sys/firmware/fdt, root) or Resources/DTBs/nuwa.dtb (same msm-id 0x207 rev 2 and board-id 0x10008).", "Stock DTB/DTBO: AOSPA android_device_xiaomi_ishtar-kernel vauxite bd593b3 dtbs/kalama-v2.dtb + dtbo.img entry 06 (msm-id 0x207 rev 2, board-id 0x10008, xiaomi,miboard-id 5)."]
+configuration = ["firmware.config = ishtar; dsc = Platforms/Xiaomi/ishtarPkg/ishtar.dsc; ISHTAR_VENDOR_HW = 0 (Mu drivers + SimpleFbDxe on the XBL-lit panel, no vendor binaries except SecParti.cfg); ENABLE_SECUREBOOT = 1 and Gic-Spurious.patch as sheng.", "ishtarPkg reuses shengPkg's board drivers by path: ShengKeyInputDxe (same PMK8550 PON + PM8550 GPIO6 keys as ishtar), ShengBootMemoryDxe (DRAM below 4 GiB from the ABL FDT), ShengGopLogDxe, ShengDisplayDepexDxe.", "MemoryMapLib = sheng's reservations; DRAM bank 1 low 0x880000000 + 0x39D00000 (12 GB layout), bank 1 high 0x8C0000000 + 5 GiB.", "bootimg.image header_version 1, pagesize 4096 (Resources/Configs/ishtar.toml from nuwa); bootimg.dtb_node splash_region 0xb8000000+0x2b00000."]
+procedure = ["Place the boot-image DTB at ../uefi-ishtar/Resources/DTBs/ishtar.dtb (adb shell su -c 'cat /sys/firmware/fdt', or copy nuwa.dtb).", "./unixnu build package -D ../UniXNU-ishtar; ./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar.", "./unixnu bootimg -D ../UniXNU-ishtar --uefi ../uefi-ishtar --dtb ../uefi-ishtar/Resources/DTBs/ishtar.dtb; fastboot boot it and check the UniXNU menu lists the iOS 27 entry.", "Decompile stock trees with scripts/dtb2dts.py (no dtc needed): dtbo.img --list, --entry 6."]
+findings = ["uefi-sheng (UniXNU org) already carries the UniXNU RAM disk path (34c9880), so ishtar needs only a board package; the old uefi-nuwa-based tree is not used.", "The stock ishtar and sheng trees have identical reserved memory (shared kalama-v2 base; overlays add the same three regions), so sheng's reservation table applies.", "Device-Binaries' nuwa set is the UEFI build ishtar ships (old port: BOOT.MXF.2.1.1-00218-KAILUA-1.36233.1, uefiplat.cfg identical) and contains ishtar's panel XML.", "The panel is initialised by the stock XBL at 60 Hz before ABL; with vendor drivers off our UEFI only keeps it scanning, so a 120 Hz mode must come from a DCS switch later.", "Old port: uefipil.cfg needed #ABL in [AUTO] and ADSP was started by UEFI ([AUTO] FULL_ADSP); both concern vendor PIL drivers, which ISHTAR_VENDOR_HW = 0 does not load.", "The 16 KiB-page iOS 18 kernel needed DarwinBoot to place kernels on 32 MiB boundaries (old uefi/darwinboot-32mb-block.patch); the arm64e profile is 4 KiB-page, so that patch is not carried.", "AOSPA's dtbo.img holds all SM8550 Xiaomi boards; ishtar entries are 06-08, sheng 50-52. Entry 06 matches this unit (msm 0x207 v2, miboard 5)."]
+completion = ["uefi-ishtar builds, shows the UniXNU menu with the iOS 27 entry from the payload RAM disk, and hands the GOP framebuffer and memory map to DarwinBoot."]
+limits = ["Not built yet (needs EDK II toolchain); Resources/DTBs/ishtar.dtb is not in git.", "DRAM bank 1 entries are inferred from nuwa's 12 GB ABL map and ishtar's /proc/iomem, not read from ishtar's SMEM table.", "proprietary-files.txt has no active entries yet."]
+next_action = ["Build the firmware and boot it once to the UniXNU menu; record the FD path and the memory map DarwinBoot reports."]
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/PORTING.md"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/PORTING.md"
 command = "python3 scripts/build-uefi.py DEBUG; fastboot boot out/uefi-ishtar-debug.img"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-25: uefi-ishtar shows the UniXNU 0.1.0 menu and DarwinBoot hands off to XNU (kernel pa 0x8C0004000, video 0xB8000000 1440x3200)."
@@ -66,7 +66,7 @@ result = "MPIDR Aff1 core numbering for secondary CPUs on xnu-12377."
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/PORTING.md"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/PORTING.md"
 command = "build-payload.py with cpus=8; fastboot boot"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-25: PSCI CPU_ON rc=0 for cpu1-7, 8/8 CPUs initialized, SGI1 verified, timer heartbeat steady."
@@ -109,7 +109,7 @@ result = "Owner storage runtime from sheng iPadOS 27; ShengUfs transport selecte
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2008-ishtar-ufs-wlun-active.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2008-ishtar-ufs-wlun-active.patch"
 command = "build-payload.py --ufs; fastboot boot"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-25: device power mode active after START STOP UNIT to W-LUN 0xd0; userdata on LUN 0, first block 0x2f3040, 229483 MiB."
@@ -129,7 +129,7 @@ next_action = ["Copy build-gop-legacy-display-27.py with the iPhone17,2 record a
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2025-ishtar-dpu-sm8550-flip.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2025-ishtar-dpu-sm8550-flip.patch"
 command = "build-payload.py --root with ishtardpu=1; fastboot boot out/flip-2.img"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-27: SM8550 DPU flip, tear-free, 953 flips with 0 latch waits or timeouts."
@@ -149,14 +149,14 @@ next_action = ["Move the old touch driver into package/ against the 12377 kernel
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2019-ishtar-touch-fts-run.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2019-ishtar-touch-fts-run.patch"
 command = "fastboot boot out/touch-Z.img (image AA)"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-27: touch stable, 2090 events and 0 failed reads across unlock, home screen, lock/unlock."
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2010-ishtar-keys-sm8550.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2010-ishtar-keys-sm8550.patch"
 command = "build-payload.py --root; fastboot boot"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-25: power and volume keys work in iOS."
@@ -176,7 +176,7 @@ next_action = ["Make build-adreno740-accelerator.py pick the record by kernelcac
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2020-ishtar-a740-gpu.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2020-ishtar-a740-gpu.patch"
 command = "fastboot boot out/gpu-s9-zap.img"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-27: GMU, HFI, GX, CP, zap (init/mem_setup/auth 0) and GPU IRQ all pass on ishtar."
@@ -196,7 +196,7 @@ next_action = ["Bring USB Ethernet back first for diagnostics."]
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2012-ishtar-usb-sm8550.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2012-ishtar-usb-sm8550.patch"
 command = "ishtarusb=2; ping 192.168.7.2"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-26: USB Ethernet up, ping 2 ms, kernel log over UDP 5140."
@@ -230,7 +230,7 @@ next_action = ["Diff sheng's ADSP loader against the old ishtar PAS 36 hang."]
 
 [[area.evidence]]
 kind = "device"
-reference = "https://github.com/markakash/UniXNU-ishtar/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2035-ishtar-adsp-battery.patch"
+reference = "https://github.com/markakash/UniXNU-ishtar-old/blob/79ddf4578db06c3738dd5b56a49434270ee260b1/xnu/patches-ishtar/2035-ishtar-adsp-battery.patch"
 command = "ishtar-adsp=1; fastboot boot"
 revision = "79ddf4578db06c3738dd5b56a49434270ee260b1"
 result = "Old iOS 18 port, 2026-10-29: battmgr every 10 s: 82%, charging, 4.25 V, 34.3 C, full 4756/design 4880 mAh, 211 cycles."

@@ -27,6 +27,8 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
 | `CONFIG_XNU_OWNER_DATA_VOLUME_UUID` | `configs/ishtar_ios27_defconfig` | T7 |
 | `[userdata] last_lba` (derived, may be short) | `board.toml` | T1 |
 | ZAP firmware entry | `proprietary-files.txt` | stage 3, not needed for stage 0 |
+| Boot-image DTB `Resources/DTBs/ishtar.dtb` | `../uefi-ishtar` (not in git) | T9 |
+| DRAM bank 1 entries (inferred, not measured on ishtar) | uefi-ishtar `ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c` | T9 |
 
 ## 2. Rules
 
@@ -72,12 +74,14 @@ git am ../UniXNU-ishtar/unixnu/*.patch && cd ..
 # 3. References
 git clone https://github.com/UniXNU/UniXNU-sm8550-common                                   # 23b2049
 git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from
-git clone https://github.com/markakash/UniXNU-ishtar ishtar                                # old iOS 18 port, 79ddf457
+git clone https://github.com/markakash/UniXNU-ishtar-old ishtar                                # old iOS 18 port, 79ddf457
 git clone --depth 1 -b vauxite https://github.com/AOSPA/android_device_xiaomi_ishtar-kernel # stock dtbs/
 git clone --filter=blob:none https://github.com/apple-oss-distributions/xnu ref-src/xnu-12377 \
   && git -C ref-src/xnu-12377 checkout ac9718fb1af618d5ce8678d0dc6e8a58f252216f
-# 4. Firmware: ask the user where uefi-ishtar lives (Mu-Silicium fork of wh1stl3/uefi-nuwa with ishtarPkg).
-git clone --recurse-submodules <uefi-ishtar remote> uefi-ishtar
+# 4. Firmware: UniXNU's uefi-sheng + this port's ishtarPkg commit (firmware/*.patch; local branch 'ishtar', 178bb0b)
+git clone https://github.com/UniXNU/uefi-sheng uefi-ishtar && cd uefi-ishtar
+git switch -c ishtar 20ac23d5 && git am ../UniXNU-ishtar/firmware/*.patch
+git submodule update --init --recursive && cd ..          # Binaries = Project-Silicium Device-Binaries (nuwa set used)
 ```
 
 If `git am` conflicts because upstream moved, apply onto `87bf1f9` instead and record the base you used.
@@ -100,7 +104,7 @@ cp unixnu.example.toml unixnu.local.toml       # fill in as the tasks below prod
 [build]
 device = "../UniXNU-ishtar"
 uefi = "../uefi-ishtar"
-dtb = "../uefi-ishtar/Resources/DTBs/ishtar.dtb"   # the DTB the old port appended; see T9
+dtb = "../uefi-ishtar/Resources/DTBs/ishtar.dtb"   # not in git: see T9
 unique_chip_id = "<16 hex digits, nonzero, chosen once and kept>"
 trust_cache = "<T6 output>"
 data_ramdisk = "<T7 output>"
@@ -205,19 +209,42 @@ free, hashes match T4.
 
 ### T9. Firmware
 
-uefi-ishtar already shows the UniXNU menu and runs DarwinBoot (old port), but it must also embed
-`UniXNURamDiskDxe`, `UniXNUDxe`, `DiskIoDxe` and FAT so the payload ramdisk is found. Reference change: uefi-sheng
-commit `34c9880` ("use the shared UniXNU RAM disk driver") and
-<https://unixnu.com/porting/uefi-firmware#required-integration>. Board settings are in `board.toml [firmware]`.
+`uefi-ishtar` is UniXNU's own `uefi-sheng` (Mu-Silicium, commit `20ac23d`) plus one commit that adds
+`Platforms/Xiaomi/ishtarPkg` and `Resources/Configs/ishtar.toml` ([firmware/](../firmware/)). The old
+uefi-nuwa-based tree is not used. What ishtarPkg already does:
+
+- Same UniXNU integration as sheng: `UniXNU`, `UniXNUDxe`, `DarwinBoot`, `UniXNURamDiskDxe`, DiskIo, FAT.
+- `ISHTAR_VENDOR_HW = 0`: Mu drivers only; `SimpleFbDxe` keeps the panel the stock XBL lit (1440x3200, 60 Hz).
+  The only vendor file is `Binaries/nuwa/RawFiles/SecParti.cfg` (nuwa's set = ishtar's stock UEFI build).
+- Reuses sheng's board drivers by path: keys (identical PMK8550/PM8550 wiring), boot memory, GOP log, depex.
+- Memory map: sheng's reservations (identical on ishtar); DRAM bank 1 low `0x880000000 + 0x39D00000`, bank 1
+  high `0x8C0000000 + 5 GiB`.
+- Boot image: `Resources/Configs/ishtar.toml` from nuwa (header v1, FD at `0xA7100000`).
+
+What this task still has to do:
+
+1. Provide the boot-image DTB, `Resources/DTBs/ishtar.dtb` (not in git): the live FDT from the phone,
+   `adb shell su -c 'cat /sys/firmware/fdt' > ishtar.dtb` (Magisk root, as in the old port), or a copy of
+   `Resources/DTBs/nuwa.dtb` (same `qcom,msm-id` 0x207 rev 2 and `qcom,board-id` 0x10008). Prefer the live one.
+2. Check the DRAM entries against the phone before trusting them: `adb shell su -c 'cat /proc/iomem' | grep "System RAM"`.
+   Bank 1 low must stay inside a System RAM run (nuwa's has a 2 MiB hole at `0x8B9D00000`); bank 1 high can grow
+   to the measured end (old port: `0x8C0000000-0xAFFFFEFFF`).
+3. Build and boot:
 
 ```sh
 ./unixnu build package -D ../UniXNU-ishtar
 ./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar
+./unixnu bootimg -D ../UniXNU-ishtar --uefi ../uefi-ishtar --dtb ../uefi-ishtar/Resources/DTBs/ishtar.dtb --ramdisk none
+fastboot boot out/ishtar/ios-27.0.1-24A446/ishtar_ios27/boot/boot.img   # expect the UniXNU menu; nothing persists
 ```
 
-If EDK II BaseTools fail on Apple Silicon, the old port's `ishtar/scripts/build-uefi.py` builds uefi-ishtar
-directly and shows the working flags. Known uefi-ishtar facts: `#ABL` in `uefipil.cfg [AUTO]`, DXE heap
-0xBAE00000+0x0D1C0000, ADSP started by UEFI (`FULL_ADSP`). Record: area `firmware` (commit, FD path, memory map).
+4. Commit any uefi-ishtar change on its `ishtar` branch and re-export it into this repo
+   (`rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`).
+
+If the screen stays black after ABL: check the framebuffer PCDs in `ishtar.dsc` (1440x3200, 32 bpp) and that the
+DTB keeps `/reserved-memory/splash_region` (board.toml adds it). If EDK II BaseTools fail on Apple Silicon, the old
+port's `ishtar/scripts/build-uefi.py` shows flags that worked. Vendor drivers (`ISHTAR_VENDOR_HW = 1`) are a later
+experiment: on sheng they blank the panel. Record: area `firmware` (commits, FD path, DTB source, memory map).
 
 ### T10. Payload and boot image
 
@@ -248,7 +275,7 @@ sha256 from `boot.json`.
 | 1 display | Copy sheng's `scripts/build-gop-legacy-display-27.py` into `scripts/`, place `abi/legacy-display-24A446-d94ap.json` beside it as `legacy-display-24A446.json`, add it to `[kernel] archives`, set `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`, copy sheng's `offline-legacy-*` kernel args. Then DPU scaling 1320x2868 → 1440x3200 (old patch 2025). | ported record; old `2025` patch |
 | 2 touch, keys | Port old patches 2011-2019 (FTM5 over GENI SE8 with GPI DMA, PM8008 L7, RPMh votes, SIDs 0x436/0x423, THP off) and 2010 (keys) into `package/` against 12377; feed an IOHIDDevice like ShengHidInput. UniXNU QcomGeniSpi has no GPI path. | `abi/hid-device-24A446-d94ap.json`; `../ishtar/xnu/patches-ishtar/` |
 | 3 GPU | Make UniXNU `scripts/build-adreno740-accelerator.py` pick `abi/ioaccelerator-base-abi-24A446-d94ap.json` by kernelcache sha256; add the Adreno archives and `CONFIG_XNU_NATIVE_ADRENO=y`; ZAP = stock `/odm/firmware/a740_zap.mbn`. | ported record |
-| 4 120 Hz | ishtar's panel is DSI command mode: switch it to its `wqhd_120hz` timing (uefi-ishtar panel config, or the DCS sequence in `ref/dtbo-06.dts`, panel "xiaomi 42 02 0a"), measure the TE interval, then boot with `sheng-vsync=120`. | `scripts/dtb2dts.py` on AOSPA `dtbs/dtbo.img --entry 6` |
+| 4 120 Hz | ishtar's panel is DSI command mode and the stock XBL leaves it at 60 Hz (panel XML `DSIRefreshRate 0x3C0000`): send the `wqhd_120hz` timing-switch DCS sequence from `ref/dtbo-06.dts` (panel "xiaomi 42 02 0a"), measure the TE interval, then boot with `sheng-vsync=120`. | `scripts/dtb2dts.py` on AOSPA `dtbs/dtbo.img --entry 6` |
 | later | battery (old 2035 vs sheng's ADSP loader), cpufreq (2029/2033), USB Ethernet (2012), Wi-Fi (Ath12kWifi), 8 GiB window | [docs/MIGRATION.md](MIGRATION.md) |
 
 To re-port records after an upstream change to sheng's or UniXNU's iPad records:

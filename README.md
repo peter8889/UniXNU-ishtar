@@ -4,7 +4,7 @@ iOS 27.0.1 (24A446) on the **Xiaomi 13 Ultra** (`ishtar`, SM8550-AB), presented 
 (`iPhone17,2`, D94AP). Built with [UniXNU](https://github.com/UniXNU/UniXNU) on the xnu-12377 kernel that boots
 iPadOS 27 on the sheng tablet (same SoC), with shared [SM8550 support](https://github.com/UniXNU/UniXNU-sm8550-common).
 
-Supersedes the iOS 18 port ([markakash/UniXNU-ishtar](https://github.com/markakash/UniXNU-ishtar) `79ddf457`,
+Supersedes the iOS 18 port ([markakash/UniXNU-ishtar-old](https://github.com/markakash/UniXNU-ishtar-old) `79ddf457`,
 Bergamota xnu-11215). Its hardware findings carry over; its kernel patches do not (see
 [docs/MIGRATION.md](docs/MIGRATION.md)).
 
@@ -19,7 +19,7 @@ Bergamota xnu-11215). Its hardware findings carry over; its kernel patches do no
 | SM8550 shared support | `UniXNU-sm8550-common` 23b2049 (`feeds.toml`); SoC patches for xnu-12377 in `patches/xnu-12377/soc/` |
 | sheng device layer | copied from `UniXNU-sheng` `feat/ipados27-gpu-parity` 6ed0ba4: `patches/xnu-12377/`, `package/` |
 | iOS | iPhone17,2 27.0.1 24A446 IPSW (URL and pins in the profile) |
-| Firmware | `../uefi-ishtar` (Mu-Silicium, from uefi-nuwa); stock DTB/DTBO from AOSPA `android_device_xiaomi_ishtar-kernel` |
+| Firmware | `../uefi-ishtar` = UniXNU `uefi-sheng` 20ac23d + [firmware/](firmware/) (`ishtarPkg`); stock DTB/DTBO from AOSPA `android_device_xiaomi_ishtar-kernel` |
 
 ## Commands
 
@@ -74,6 +74,7 @@ Running the payload's userdata step writes the iOS images into `userdata` and **
 | `patches/xnu-12377/` | device series (sheng) and `soc/` series (SM8550 for 12377) |
 | `package/` | board package (appears as `kits/sheng`, see board.toml) |
 | `unixnu/` | UniXNU commit adding the iOS 27 profile |
+| `firmware/` | uefi-ishtar commit adding `ishtarPkg` on top of UniXNU's `uefi-sheng` |
 | `reports/` | host check outputs |
 | `docs/MIGRATION.md` | old ishtar patches 2000-2035 mapped to their new home |
 | `docs/HANDOFF.md` | ordered tasks to the first boot, for an agent on a machine with the build tools |

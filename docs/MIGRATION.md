@@ -1,6 +1,6 @@
 # Migration from the iOS 18 port
 
-The iOS 18 port ([markakash/UniXNU-ishtar](https://github.com/markakash/UniXNU-ishtar) `79ddf457`, local `../ishtar`)
+The iOS 18 port ([markakash/UniXNU-ishtar-old](https://github.com/markakash/UniXNU-ishtar-old) `79ddf457`, local `../ishtar`)
 patched Bergamota's xnu-11215 tree (`Ishtar*` classes, iPhone XR identity, 16 KiB pages). This repository builds
 UniXNU's arm64e xnu-12377 kernel with 4 KiB pages, so none of those patches apply as-is. Each one is either covered
 by UniXNU/sheng code, ported as a board component, or dropped.

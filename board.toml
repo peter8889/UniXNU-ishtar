@@ -33,16 +33,19 @@
 
 
 ["firmware"]
-# ../uefi-ishtar: Mu-Silicium fork from wh1stl3/uefi-nuwa (ishtarPkg). It must embed UniXNU, UniXNUDxe, DarwinBoot,
-# UniXNURamDiskDxe, DiskIoDxe and FAT (https://unixnu.com/porting/uefi-firmware#required-integration).
+# ../uefi-ishtar: UniXNU/uefi-sheng (20ac23d) + ishtarPkg on branch ishtar (178bb0b). It already embeds UniXNU,
+# UniXNUDxe, DarwinBoot, UniXNURamDiskDxe, DiskIoDxe and FAT, like sheng. Values below follow UniXNU-sheng's.
 "config" = "ishtar"
 "dsc" = "Platforms/Xiaomi/ishtarPkg/ishtar.dsc"
 "fd" = "Build/ishtarPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd"
-"submodules" = ["Binaries", "Mu_Basecore", "Common/Mu", "Common/Mu_OEM_Sample", "Silicium-ACPI", "Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl"]
-"packages" = ["{uefi}", "{uefi}/Platforms/Xiaomi", "{tree}/package", "{tree}/drivers/DarwinBoot", "{edk2}", "{uefi}/Common/Mu", "{uefi}/Common/Mu_OEM_Sample", "{uefi}/Mu_Basecore", "{uefi}/Silicon/Qualcomm", "{uefi}/Silicon/Silicium", "{uefi}/Silicium-ACPI", "{uefi}/Silicium-ACPI/Platforms/Xiaomi", "{uefi}/Silicium-ACPI/Silicon/Qualcomm"]
+# Binaries: ishtarPkg reads Binaries/nuwa/RawFiles/SecParti.cfg (Project-Silicium Device-Binaries).
+"submodules" = ["Binaries", "Common/Mu", "Common/Mu_OEM_Sample", "Silicium-ACPI", "Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl"]
+# SoC-level: masks interrupts that have no handler (IPCC INTID 0x105 among them).
+"patches" = ["Resources/MuPatches/Gic-Spurious.patch"]
+"packages" = ["{uefi}", "{uefi}/Platforms/Xiaomi", "{tree}/package", "{tree}/drivers/DarwinBoot", "{edk2}", "{uefi}/Common/Mu", "{uefi}/Common/Mu_OEM_Sample", "{uefi}/Silicon/Qualcomm", "{uefi}/Silicon/Silicium", "{uefi}/Silicium-ACPI", "{uefi}/Silicium-ACPI/Platforms/Xiaomi", "{uefi}/Silicium-ACPI/Silicon/Qualcomm"]
 
 ["firmware"."defines"]
-"ENABLE_SECUREBOOT" = "0"
+"ENABLE_SECUREBOOT" = "1"
 "DEVICE_MODEL" = "ishtar"
 "MEMORY_PROTECTION" = "TRUE"
 "SHIP_MODE" = "FALSE"
