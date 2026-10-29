@@ -801,6 +801,13 @@
       "original_sha256": "84cc57ef206a54cfeb0c1c53d6f94233e341ebab29cdbec6be52aa9d67a3f975",
       "native_symbol": "_kauth_cred_getrgid",
       "evidence": "ldr w0, [x0, #0x68]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x68 cr_rgid), the order of bsd/kern/kern_credential.c."
+    },
+    {
+      "original": "0xfffffff00ad052bc",
+      "original_size": 96,
+      "original_sha256": "f6ccc88eded4f6ed253717fb648f6872e86b9999797cee8916122e595331f726",
+      "native_symbol": "_strncasecmp",
+      "evidence": "(s1, s2, n): returns 0 for n == 0, else folds A-Z to lower case on both sides and compares bytes until a difference, NUL or n: libkern/stdio string.c strncasecmp, right after the matched _strcasecmp (next: the 4-argument strbufcasecmp). Called by sandbox, apfs, AppleARMPlatform, IOMobileGraphicsFamily."
     }
   ],
   "data": [
