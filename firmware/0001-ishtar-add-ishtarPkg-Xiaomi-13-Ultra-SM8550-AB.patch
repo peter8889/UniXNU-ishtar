@@ -1,7 +1,7 @@
 From 4d28c9d273822d89bfc30868c7a71b6899594de8 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 16:11:57 +0100
-Subject: [PATCH] ishtar: add ishtarPkg (Xiaomi 13 Ultra, SM8550-AB)
+Subject: [PATCH 1/2] ishtar: add ishtarPkg (Xiaomi 13 Ultra, SM8550-AB)
 
 Board package for ishtar on uefi-sheng: platform DSC/FDF, includes,
 MemoryMapLib and ConfigurationMapLib derived from shengPkg, and ishtar's own
@@ -2293,5 +2293,5 @@ index 00000000..718b6fad
 +[boot_image]
 +header_version = 1
 -- 
-2.39.5 (Apple Git-154)
+2.56.0
 

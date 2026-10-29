@@ -1,0 +1,41 @@
+From 0eff5a49f53ee8306d08781eefc0bce5f970741f Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 22:17:10 +0100
+Subject: [PATCH 2/2] ishtar: stock panel FFS GUID and Binaries/ishtar
+
+RAW.inc: Panel_M1_42_02_0a_ltpo_dsc_cmd.xml is FFS 922A8AF4-47F4-44F7-97C4-D6D157F694B7
+in ishtar's stock uefi.elf (OS3.0.308.0.WMACNXM); 15A84758 was sheng's.
+Binaries: 9a39f57 adds ishtar/ (stock, unpatched). The commit is local until
+.gitmodules points at a private Device-Binaries copy that holds it.
+
+Change-Id: Iedce80a10c59a406d41d331ab98005338f8f1022
+---
+ Binaries                                   | 2 +-
+ Platforms/Xiaomi/ishtarPkg/Include/RAW.inc | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Binaries b/Binaries
+index a1501e0c..9a39f578 160000
+--- a/Binaries
++++ b/Binaries
+@@ -1 +1 @@
+-Subproject commit a1501e0c2e642d6ac0d8f52c85af2a67b75a7799
++Subproject commit 9a39f57828ad010f7cfac6dda58a19b90d50ccb9
+diff --git a/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc b/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
+index fe83d02f..4e002c89 100644
+--- a/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
++++ b/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
+@@ -5,8 +5,8 @@
+   }
+ 
+ !if $(USE_CUSTOM_DISPLAY_DRIVER) == 1
+-  # Stock ishtar panel data (FFS GUID from the stock image still to be confirmed).
+-  FILE FREEFORM = 15A84758-9EE1-4543-9C82-F430A70F0813 {
++  # Stock ishtar panel data (FFS GUID from the stock uefi image).
++  FILE FREEFORM = 922A8AF4-47F4-44F7-97C4-D6D157F694B7 {
+     SECTION UI = "Panel_M1_42_02_0a_ltpo_dsc_cmd.xml"
+     SECTION RAW = Binaries/ishtar/RawFiles/Panel_M1_42_02_0a_ltpo_dsc_cmd.xml
+   }
+-- 
+2.56.0
+
