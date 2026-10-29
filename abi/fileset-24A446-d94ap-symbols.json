@@ -556,6 +556,20 @@
       "original_sha256": "e160f3bbf3ab98d867269b3092fa5854fa2897baf1bfa50812e5638bd288295f",
       "native_symbol": "__ZN10IOReporter12updateReportEP19IOReportChannelListjPvS2_",
       "evidence": "Member: takes _reporterLock (+0x80) with interrupts disabled, stores the interrupt state at +0x78, sets _reporterIsLocked (+0x48), calls the virtual handleUpdateReport, clears the flag and unlocks. Source: IOReporter.cpp updateReport (lockReporter/handleUpdateReport/unlockReporter inlined). [Addresses in this text are from kernelcache 38e6d9fa; the fields above were ported to fa07057b by scripts/kc-port.py.] Ported from iPad17,3 38e6d9fa by UniXNU-ishtar scripts/kc-port.py (masked code verified)."
+    },
+    {
+      "original": "0xfffffff00ad4d858",
+      "original_size": 48,
+      "original_sha256": "abb7c19ec8e64fd9442b0ac63d517c44dd947f80781419e9cf943ce14161035b",
+      "native_symbol": "_mach_absolute_time",
+      "evidence": "Reads CNTVCTSS_EL0 plus the per-CPU timebase offset at [tpidr_el1+0x1b8]+0x58 with a re-read loop and returns the sum; directly precedes the matched _clock_get_system_microtime and _absolutetime_to_microtime (osfmk/arm64 rtclock). corecrypto_kext_start calls it right after the fips_mode boot-arg. The native one reads the SM8550 timer (ArmCpu native arch timer)."
+    },
+    {
+      "original": "0xfffffff00ad1e170",
+      "original_size": 172,
+      "original_sha256": "3acebfb55ec964c3a547fbbcca07ed5d3ffefc5091aa09c3137bce583db96dbc",
+      "native_symbol": "_read_random",
+      "evidence": "(void *buf, u_int n): calls prng_funcs.refresh(prng_ctx) through the constant table at +0x768, then loops prng_funcs.generate(prng_ctx, cpu_number(), MIN(n, 256), buf) through +0x770; osfmk/prng/prng_random.c read_random with read_random_generate inlined (CCKPRNG_GENERATE_MAX_NBYTES 256). Called by corecrypto."
     }
   ],
   "data": [
