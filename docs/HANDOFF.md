@@ -46,7 +46,7 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
   40-character commit. Old-port results are hardware facts, not evidence for this implementation.
 - After editing the UniXNU or uefi-ishtar branch, re-export it into this repo (from this repo's root), then ask the
   user to push (section 8):
-  `rm unixnu/*.patch && git -C ../UniXNU format-patch upstream/feat/ipados27-gpu-parity..main -o "$PWD/unixnu"`
+  `rm unixnu/*.patch && git -C ../UniXNU format-patch 87bf1f9..main -o "$PWD/unixnu"`
   `rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`
 
 ## 3. Machine
@@ -79,7 +79,7 @@ git clone https://github.com/markakash/UniXNU UniXNU
 git -C UniXNU remote add upstream https://github.com/UniXNU/UniXNU && git -C UniXNU fetch upstream
 # 3. References
 git clone https://github.com/UniXNU/UniXNU-sm8550-common                                   # 23b2049
-git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from
+git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from, BootLog.c 5423d6b
 git clone https://github.com/markakash/UniXNU-ishtar-old ishtar                                # old iOS 18 port, 79ddf457
 git clone --depth 1 -b vauxite https://github.com/AOSPA/android_device_xiaomi_ishtar-kernel # stock dtbs/
 git clone --filter=blob:none https://github.com/apple-oss-distributions/xnu ref-src/xnu-12377 \

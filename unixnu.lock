@@ -10,7 +10,7 @@ commit = "e31e90a24c27ad6cbe981650d12a1a4124065b03"
 commit = "7edb88fbae296fb7c8ce2f64e115e116e566d51c"
 
 [source."ShengUfs"]
-commit = "e2b32cc429e8cf1501161c1d8c517f8994ceb9b2"
+commit = "fab07fcc871acb0777f083296f9ebea6cc76d6c4"
 
 [source."corecrypto-2023"]
 commit = "11fba65b12d8830630e248dfa8344caf8b065f26"
@@ -26,6 +26,9 @@ commit = "b7ed7cf5cf7dd12b98672435db2225a860f199d8"
 
 [source."libpthread"]
 commit = "1f4f5265b319111142f1bf3a27d4484ef5a98314"
+
+[source."sm8550"]
+commit = "23b2049fcd9e30356161def84231334fb55ecca9"
 
 [source."xnu"]
 commit = "ac9718fb1af618d5ce8678d0dc6e8a58f252216f"

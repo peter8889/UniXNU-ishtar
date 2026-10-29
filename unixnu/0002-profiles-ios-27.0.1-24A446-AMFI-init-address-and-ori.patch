@@ -1,7 +1,7 @@
 From 53d54c68f460bf14558c28a4813e41872e9baead Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 13:53:38 +0100
-Subject: [PATCH 2/3] profiles: ios-27.0.1-24A446 AMFI init address and
+Subject: [PATCH 2/4] profiles: ios-27.0.1-24A446 AMFI init address and
  original-classes ABI
 
 Both ported from the iPad17,3 profile to the iPhone17,2 kernelcache by
@@ -128,5 +128,5 @@ index a355759..f3623c1 100644
  # The iPad roots minus com.apple.iokit.IOHIDEventDriver, which the iPhone17,2 fileset does not have (the class itself
  # ships in IOHIDFamily). Every other root is present.
 -- 
-2.39.5 (Apple Git-154)
+2.56.0
 

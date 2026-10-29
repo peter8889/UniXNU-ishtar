@@ -1,0 +1,150 @@
+From 74320edd8adb8b09eaa990cefd16be248bb10ff6 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 22:08:06 +0100
+Subject: [PATCH 4/4] components: follow the feat/ipados27-gpu-parity heads
+ (2026-10-29)
+
+The catalog revisions are what "unixnu fetch" clones when a driver
+submodule is not checked out, and the only source for ShengUfs and
+ShengHidInput. Several still named the 2026-10-24 docs commits, older than
+the gitlinks: ShengUfs e2b32cc4 predates "use the VM interfaces public in
+newer XNU" and the source storage root layout. Point every component that
+has an ipados27 branch at its head:
+
+ArmCpu 4bd3230f, DarwinBoot 3e3a8a96, Adreno740 c66357f2,
+AdrenoMetal 547312cf, ShengUfs fab07fcc, ShengHidInput 24f1f3fb,
+GopFramebuffer 90b64efc, RamBlock 4be2d7eb, VirtioMmioBlock f4dfce67,
+XnuPrelink 76452c6e, ArmSmmu4K 1811b6d1, VerifiedRoot ed368a8d.
+
+AdrenoMetal also moves its gitlink from 9edbe61c back to 547312cf:
+upstream rewound both UniXNU and AdrenoMetal's feat/ipados27-gpu-parity
+past 9edbe61c (backdrops off the compute path) and 6ad1297's parent.
+
+Change-Id: I650b1e3dd818a5fa5e2ed4b11f210efa7b9193a8
+---
+ components.toml     | 24 ++++++++++++------------
+ drivers/AdrenoMetal |  2 +-
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/components.toml b/components.toml
+index f3fa049..4cb9632 100644
+--- a/components.toml
++++ b/components.toml
+@@ -6,7 +6,7 @@ kind = "driver"
+ function = "ARM generic interrupt controller and timer"
+ scope = "arm64"
+ repository = "https://github.com/UniXNU/ArmCpu.git"
+-revision = "9066b53bbc82e92a98ec44a11dd50fd13eaf1a1b"
++revision = "4bd3230f48121e47a0badb4ea2d1674715ba2197"
+ path = "drivers/ArmCpu"
+ hardware = ["ARM GICv3", "ARM generic timer"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -63,7 +63,7 @@ kind = "driver"
+ function = "UEFI XNU loader"
+ scope = "firmware"
+ repository = "https://github.com/UniXNU/DarwinBoot.git"
+-revision = "3325e352d7df68a9f9ad74832ed94a6acbbd7390"
++revision = "3e3a8a969e1177995984d8ed98c9dcc44e318265"
+ path = "drivers/DarwinBoot"
+ hardware = ["ARM64 UEFI"]
+ os_abi = []
+@@ -83,7 +83,7 @@ kind = "driver"
+ function = "A740 kernel GPU driver"
+ scope = "gpu"
+ repository = "https://github.com/UniXNU/Adreno740.git"
+-revision = "4e0314df8ad29d52f6fa3f9383a540adcd618b87"
++revision = "c66357f2135542cd32cd72861007e0823e453ac8"
+ path = "drivers/Adreno740"
+ hardware = ["Adreno 740", "SM8550"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -105,7 +105,7 @@ kind = "driver"
+ function = "Metal frontend through metal2vulkan and Turnip"
+ scope = "graphics"
+ repository = "https://github.com/UniXNU/AdrenoMetal.git"
+-revision = "454ff2ce83766ce7b3e0f355e83f1d72907708b3"
++revision = "547312cf58156f7abe5f83a3376a14f5cb157884"
+ path = "drivers/AdrenoMetal"
+ hardware = ["Turnip Darwin backend", "kernel GPU user-client ABI"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -126,7 +126,7 @@ kind = "driver"
+ function = "SM8550 UFS transport and sheng persistent storage"
+ scope = "board"
+ repository = "https://github.com/UniXNU/ShengUfs.git"
+-revision = "e2b32cc429e8cf1501161c1d8c517f8994ceb9b2"
++revision = "fab07fcc871acb0777f083296f9ebea6cc76d6c4"
+ path = "drivers/ShengUfs"
+ hardware = ["SM8550 UFS controller"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -148,7 +148,7 @@ kind = "driver"
+ function = "sheng touch input through IOHIDDevice"
+ scope = "board"
+ repository = "https://github.com/UniXNU/ShengHidInput.git"
+-revision = "5f3a37cec0c3fc4234b10726b25489a55f0d77ef"
++revision = "24f1f3fbed6feff42e1ca02e2ce386a5c3c36da8"
+ path = "drivers/ShengHidInput"
+ hardware = ["sheng touch event source"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -211,7 +211,7 @@ kind = "driver"
+ function = "UEFI GOP framebuffer and MobileFramebuffer integration"
+ scope = "display"
+ repository = "https://github.com/UniXNU/GopFramebuffer.git"
+-revision = "cf3b42979a9c44219e7bb149543e6fc3388b58ed"
++revision = "90b64efcdbf43edbc40a66f14bdb8a97a07a12ae"
+ path = "drivers/GopFramebuffer"
+ hardware = ["UEFI GOP framebuffer"]
+ os_abi = ["ipados-17.7.11-21H461", "ipados-27.0.1-24A446"]
+@@ -277,7 +277,7 @@ kind = "driver"
+ function = "RAM-backed block device and sparse seed storage"
+ scope = "storage"
+ repository = "https://github.com/UniXNU/RamBlock.git"
+-revision = "25c57e0e9b68bf452dd1986914525edc9d2320bc"
++revision = "4be2d7eb05ef5a98126c91e0302c149140c0e3e1"
+ path = "drivers/RamBlock"
+ hardware = ["RAM block backing"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -299,7 +299,7 @@ kind = "driver"
+ function = "VirtIO MMIO read-only block transport"
+ scope = "protocol"
+ repository = "https://github.com/UniXNU/VirtioMmioBlock.git"
+-revision = "8ee3a5ab5a3726b0641990228346aec338246eaf"
++revision = "f4dfce679d429aef5487d8c88880ecd2f6573fd4"
+ path = "drivers/VirtioMmioBlock"
+ hardware = ["VirtIO 1.2 modern MMIO split queues"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -343,7 +343,7 @@ kind = "kit"
+ function = "XNU kernelcache prelink and ABI inspection"
+ scope = "tool"
+ repository = "https://github.com/UniXNU/XnuPrelink.git"
+-revision = "f876e3ee62e18fc06653dd75ed7dafcfb3950ac0"
++revision = "76452c6e6b6014747c5500b1e57c544fbc1c3249"
+ path = "kits/XnuPrelink"
+ hardware = []
+ os_abi = []
+@@ -401,7 +401,7 @@ kind = "kit"
+ function = "ARM SMMU translation with 4 KiB pages"
+ scope = "controller"
+ repository = "https://github.com/UniXNU/ArmSmmu4K.git"
+-revision = "8bb168ad058c28d5c04f179ba407875eacba7ef3"
++revision = "1811b6d1a398ce0cab4e6143b610610f6ea59067"
+ path = "kits/ArmSmmu4K"
+ hardware = ["ARM SMMU", "MMU-500"]
+ os_abi = []
+@@ -439,7 +439,7 @@ kind = "kit"
+ function = "Authenticated block reads"
+ scope = "storage"
+ repository = "https://github.com/UniXNU/VerifiedRoot.git"
+-revision = "def026642c6c6e71be0dea267d989df1d29ddc64"
++revision = "ed368a8d4451f8670228f9025f1b45479509c789"
+ path = "kits/VerifiedRoot"
+ hardware = []
+ os_abi = []
+diff --git a/drivers/AdrenoMetal b/drivers/AdrenoMetal
+index 9edbe61..547312c 160000
+--- a/drivers/AdrenoMetal
++++ b/drivers/AdrenoMetal
+@@ -1 +1 @@
+-Subproject commit 9edbe61cf2bd2273730d64eec11c23f40db8f57d
++Subproject commit 547312cf58156f7abe5f83a3376a14f5cb157884
+-- 
+2.56.0
+
