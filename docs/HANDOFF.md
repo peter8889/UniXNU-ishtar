@@ -260,7 +260,8 @@ uefi-nuwa-based tree is not used. What ishtarPkg already does:
   The only vendor file built in is `Binaries/ishtar/RawFiles/SecParti.cfg` (T0).
 - Own board drivers (copies of sheng's with new FILE_GUIDs): `IshtarKeyInputDxe` (same PMK8550/PM8550 key
   wiring as sheng), `IshtarBootMemoryDxe`, `IshtarGopLogDxe`, `IshtarDisplayDepexDxe`. The key driver's host test
-  (`Drivers/IshtarKeyInputDxe/Test/keys_host.c`) has not been run; compile and run it here once.
+  (`Drivers/IshtarKeyInputDxe/Test/keys_host.c`) has not been run. It is optional: run it only on a machine where
+  the user allows running locally built binaries, and ask first.
 - Memory map: sheng's reservations (identical on ishtar); DRAM bank 1 low `0x880000000 + 0x39D00000`, bank 1
   high `0x8C0000000 + 5 GiB`.
 - Boot image: `Resources/Configs/ishtar.toml` from nuwa (header v1, FD at `0xA7100000`).
