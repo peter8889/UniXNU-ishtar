@@ -284,7 +284,7 @@ fastboot boot out/ishtar/ios-27.0.1-24A446/ishtar_ios27/boot/boot.img   # expect
    (`rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`).
 
 If the screen stays black after ABL: check the framebuffer PCDs in `ishtar.dsc` (1440x3200, 32 bpp) and that the
-DTB keeps `/reserved-memory/splash_region` (board.toml adds it). If EDK II BaseTools fail on Apple Silicon, the old
+DTB keeps `/reserved-memory/splash_region` (the live ABL FDT has it). If EDK II BaseTools fail on Apple Silicon, the old
 port's `ishtar/scripts/build-uefi.py` shows flags that worked. Vendor drivers (`ISHTAR_VENDOR_HW = 1`) are a later
 experiment: on sheng they blank the panel. Record: area `firmware` (commits, FD path, DTB source, memory map).
 

@@ -82,7 +82,8 @@
 
 
 ["bootimg"]
-"dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xb8000000", "0x0", "0x2b00000"] }] }]
+# No dtb_node: the live ABL FDT (Resources/DTBs/ishtar.dtb) already has /reserved-memory/splash_region
+# (cont_splash_region, 0xb8000000+0x2b00000), and fdtput refuses to create it again.
 
 ["bootimg"."image"]
 # From uefi-ishtar Resources/Configs/ishtar.toml (inherited from nuwa); the old port boots with these.
