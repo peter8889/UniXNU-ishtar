@@ -98,7 +98,7 @@ Check the host side reproduces:
 ```sh
 cd $W/UniXNU
 ./unixnu defconfig ishtar_ios27_defconfig -D ../UniXNU-ishtar
-./unixnu fetch -D ../UniXNU-ishtar            # writes ../UniXNU-ishtar/unixnu.lock: commit it
+./unixnu fetch -D ../UniXNU-ishtar            # reuses the committed unixnu.lock pins (--update moves them)
 ./unixnu status --json -D ../UniXNU-ishtar     # arm64e, sm8550, ios-27.0.1-24A446, 75 patches, 16 components
 python3 scripts/porting-record.py check --device ../UniXNU-ishtar
 python3 ../UniXNU-ishtar/scripts/check-patch-series.py --xnu ../ref-src/xnu-12377   # 75/75
