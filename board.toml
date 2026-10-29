@@ -8,7 +8,7 @@
 # read board sources from that fixed path. Keep this until those scripts take board.kit.
 "kit" = "sheng"
 "soc_source" = "sm8550"
-# UniXNU branch ishtar/ios27 (local, based on feat/ipados27-gpu-parity 1cff985) adds this profile.
+# UniXNU branch ishtar/ios27 (local, based on feat/ipados27-gpu-parity 87bf1f9) adds this profile.
 "os_profile" = "ios-27.0.1-24A446"
 
 

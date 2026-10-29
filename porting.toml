@@ -11,7 +11,7 @@ id = "configuration"
 status = "host-verified"
 components = []
 paths = ["board.toml", "feeds.toml", "configs/**", ".github/**", ".gitignore", "local.toml.example", "unixnu/**"]
-inputs = ["UniXNU branch ishtar/ios27 = feat/ipados27-gpu-parity 1cff985 + unixnu/0001-profiles-ios-27.0.1-24A446-iPhone17-2-D94AP.patch (profile ios-27.0.1-24A446).", "UniXNU-sm8550-common 23b2049 (feeds.toml), the pin of sheng's feat/ipados27-gpu-parity 0dac77e.", "iPhone17,2 iOS 27.0.1 24A446 IPSW; xnu-12377.121.6 (ac9718fb) public source."]
+inputs = ["UniXNU branch ishtar/ios27 = feat/ipados27-gpu-parity 87bf1f9 + unixnu/0001-profiles-ios-27.0.1-24A446-iPhone17-2-D94AP.patch (profile ios-27.0.1-24A446).", "UniXNU-sm8550-common 23b2049 (feeds.toml), the pin of sheng's feat/ipados27-gpu-parity 6ed0ba4.", "iPhone17,2 iOS 27.0.1 24A446 IPSW; xnu-12377.121.6 (ac9718fb) public source."]
 configuration = ["board.os_profile = ios-27.0.1-24A446; board.soc_source = sm8550; board.kit = sheng (UniXNU build-sheng-source-storage.py and build-arm-driver.py read board sources from kits/sheng).", "kernel.defconfig = ishtar_ios27_defconfig (stage 0: CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n, CONFIG_XNU_NATIVE_ADRENO=n); config_fragments = arch common + os ios.config (no SoC fragment, as sheng's iPadOS 27 board).", "kernel.patch_series = arch, device:patches/xnu-12377/soc/series, os, device:patches/xnu-12377/series."]
 procedure = ["cd ../UniXNU && git switch ishtar/ios27 (or git am ../UniXNU-ishtar/unixnu/*.patch on feat/ipados27-gpu-parity).", "Copy local.toml.example to local.toml when the SoC checkout is local; otherwise ./unixnu fetch -D ../UniXNU-ishtar.", "~/miniconda3/bin/python3 ./unixnu defconfig ishtar_ios27_defconfig -D ../UniXNU-ishtar, then ./unixnu status --json -D ../UniXNU-ishtar."]
 findings = ["The resolver reads only UniXNU/profiles/os, so an OS profile cannot live in a device repository; the iOS profile is a UniXNU commit carried here as a patch.", "Every iOS 27.0.1 iPhone and iPad ships build 24A446, so the iPad profile's kernel source, Darwin 26 patches and OS series apply unchanged to the iPhone profile.", "UniXNU's CLI needs Python 3.11+ (tomllib); macOS /usr/bin/python3 is 3.9.", "unixnu/0002 adds the ported AMFI init address and abi/original-classes.json to the profile; regenerate both patches with git format-patch -2 on ishtar/ios27 after any profile change."]
@@ -23,8 +23,8 @@ next_action = ["Publish the UniXNU profile branch, then run ./unixnu fetch to wr
 kind = "host"
 reference = "reports/patch-series-xnu-12377.txt"
 command = "~/miniconda3/bin/python3 ./unixnu status --json -D ../UniXNU-ishtar; ./unixnu defconfig ishtar_ios27_defconfig -D ../UniXNU-ishtar; scripts/check-patch-series.py --xnu ../ref-src/xnu-12377"
-revision = "14f1a2831b12e7c85ae3626401754bec599005a2"
-result = "2026-10-29: status resolves (16 components with dependencies, 75 patches); defconfig written; 75/75 patches apply on xnu-12377.121.6."
+revision = "4ecbe02336be74f6b24f5a943aca271cdc744eca"
+result = "2026-10-29, after syncing sheng 6ed0ba4 and UniXNU 87bf1f9: status resolves (16 components with dependencies, 75 patches); defconfig written; 75/75 patches apply on xnu-12377.121.6."
 
 [[area]]
 id = "firmware"
@@ -33,7 +33,7 @@ components = ["DarwinBoot"]
 paths = ["proprietary-files.txt", "scripts/dtb2dts.py"]
 inputs = ["../uefi-ishtar: Mu-Silicium fork of wh1stl3/uefi-nuwa with ishtarPkg (not on the current build machine).", "Stock DTB/DTBO: AOSPA android_device_xiaomi_ishtar-kernel vauxite bd593b3 dtbs/kalama-v2.dtb + dtbo.img entry 06 (msm-id 0x207 rev 2, board-id 0x10008, xiaomi,miboard-id 5)."]
 configuration = ["firmware.config = ishtar; dsc = Platforms/Xiaomi/ishtarPkg/ishtar.dsc; ENABLE_SECUREBOOT = 0; no Mu patches (sheng's Gic-Spurious.patch belongs to uefi-sheng).", "bootimg.image header_version 1, pagesize 4096; bootimg.dtb_node splash_region 0xb8000000+0x2b00000."]
-procedure = ["Add UniXNURamDiskDxe, UniXNUDxe, DiskIoDxe and FAT to uefi-ishtar (https://unixnu.com/porting/uefi-firmware#required-integration); its UniXNU menu and DarwinBoot already run.", "./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar; ./unixnu bootimg ... --dtb <stock kalama-v2.dtb>.", "Decompile stock trees with scripts/dtb2dts.py (no dtc needed): dtbo.img --list, --entry 6."]
+procedure = ["Add UniXNURamDiskDxe, UniXNUDxe, DiskIoDxe and FAT to uefi-ishtar (https://unixnu.com/porting/uefi-firmware#required-integration; uefi-sheng 34c9880 'use the shared UniXNU RAM disk driver' is the reference change); its UniXNU menu and DarwinBoot already run.", "./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar; ./unixnu bootimg ... --dtb <stock kalama-v2.dtb>.", "Decompile stock trees with scripts/dtb2dts.py (no dtc needed): dtbo.img --list, --entry 6."]
 findings = ["Old port: uefipil.cfg needed #ABL in [AUTO] and the DXE heap at 0xBAE00000+0x0D1C0000 (sheng's size) to reach the UniXNU menu; ADSP is started by UEFI ([AUTO] FULL_ADSP).", "The 16 KiB-page iOS 18 kernel needed DarwinBoot to place kernels on 32 MiB boundaries (old uefi/darwinboot-32mb-block.patch); the arm64e profile is 4 KiB-page, so that patch is not carried.", "AOSPA's dtbo.img holds all SM8550 Xiaomi boards; ishtar entries are 06-08, sheng 50-52. Entry 06 matches this unit (msm 0x207 v2, miboard 5)."]
 completion = ["uefi-ishtar builds with the payload RAM disk, lists the iOS 27 entry and hands the GOP framebuffer and memory map to DarwinBoot."]
 limits = ["uefi-ishtar and the stock firmware dump are not on the build machine used for this record.", "proprietary-files.txt has no active entries yet."]
@@ -95,7 +95,7 @@ status = "implemented"
 components = ["ShengUfs", "VirtioMmioBlock", "RamBlock", "VerifiedRoot"]
 paths = ["package/Source*.cpp"]
 inputs = ["UFS 4.0 ufshc@1d84000, PHY 0x1d80000; userdata = LUN 0 GPT entry (sda30), first block 0x2f3040 (4 KiB), 229483 MiB.", "iPhone17,2 OS and Cryptex1,SystemOS images (AEA) and their root policies."]
-configuration = ["CONFIG_XNU_SOURCE_STORAGE=y with package/SourceStorage.cpp, SourceRootPolicies.cpp, SourceRootBinding.cpp (copied from sheng 0dac77e); policy tables in userdata.", "Kernel args native-source-storage=1 native-ufs-root=1; install entry sheng-data-reset=1/2 (ShengUfs names).", "board.toml userdata first_lba 3092544, last_lba 61840191."]
+configuration = ["CONFIG_XNU_SOURCE_STORAGE=y with package/SourceStorage.cpp, SourceRootPolicies.cpp, SourceRootBinding.cpp (copied from sheng 6ed0ba4); policy tables in userdata.", "Kernel args native-source-storage=1 native-ufs-root=1; install entry sheng-data-reset=1/2 (ShengUfs names).", "board.toml userdata first_lba 3092544, last_lba 61840191."]
 procedure = ["Confirm userdata geometry: adb shell cat /sys/block/sda/sda30/start /sys/block/sda/sda30/size (512-byte sectors).", "Decrypt the iPhone17,2 OS and SystemOS images, fill the profile [root] UUIDs and digests, build the policies and the Data seed, set CONFIG_XNU_OWNER_DATA_VOLUME_UUID.", "Write the userdata windows (this erases Android userdata)."]
 findings = ["ShengUfs finds userdata through the LUN 0 GPT and already sends START STOP UNIT to the device W-LUN, the step the old ishtar port needed after UEFI (old 2008).", "Old port: UFS reads and writes worked from XNU with SM8550 GCC offsets from Linux gcc-sm8550.c (old 2002)."]
 completion = ["The OS and SystemOS windows mount, the Data volume mounts read-write and launchd starts."]
@@ -121,11 +121,11 @@ components = ["GopFramebuffer"]
 paths = ["package/*Display*", "package/*Dpu*", "scripts/*display*"]
 inputs = ["Panel 'xiaomi 42 02 0a cmd mode dsc dsi panel' (ref/dtbo-06.dts), 1440x3200, DSC 1.2 (slice 720x20, 8 bpp, 10 bpc), timings 60/120/90/... Hz with DCS switch commands; OLED, no WLED.", "MDSS 9.0.0: CTL0 -> INTF_1 (DSI0 command mode, tear check, autorefresh), DSC0+1, VIG0+VIG1 each 720 columns of 0xb8000000 (stride 5760).", "iPhone17,2 canvas 1320x2868 @3x (artwork-device-subtype 2868)."]
 configuration = ["GopFramebuffer selected; CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n in stage 0.", "adt.product.artwork-display-gamut = sRGB (8-bit path)."]
-procedure = ["Stage 1: build legacy-display-24A446 records for the iPhone17,2 kernelcache (image-assembly area), add build-gop-legacy-display-27.py and the offline-legacy-* args.", "Report 1320x2868 to iOS and let the DPU VIG scalers stretch it to 1440x3200, instead of the old CPU scaler.", "120 Hz: send the panel's wqhd_120hz timing-switch DCS sequence and drive frames from the tear-check vsync."]
-findings = ["Old port (old 2025): DPU page flip with double buffering in the 45 MB UEFI carve-out, both VIG pipes + one CTL flush, was tear-free (953 flips, 0 timeouts); GPU-written surfaces need dc civac before scanout.", "Old port: iOS powers the panel off after the lock screen and ishtar has no WLED, so the framebuffer was kept on (old 2009)."]
+procedure = ["Stage 1: build legacy-display-24A446 records for the iPhone17,2 kernelcache (image-assembly area), add build-gop-legacy-display-27.py and the offline-legacy-* args.", "Report 1320x2868 to iOS and let the DPU VIG scalers stretch it to 1440x3200, instead of the old CPU scaler.", "120 Hz: put the panel in its wqhd_120hz timing (uefi-ishtar panel configuration, or the DT timing-switch DCS sequence from XNU), measure the TE interval, then boot with sheng-vsync=120 (GopFramebuffer reports the rate and ticks vsync at it)."]
+findings = ["sheng's 120 Hz is two parts: its panel already scans at its own rate after UEFI (sheng-dpu=3 measured a 5.4 ms flush latch with no start needed), and GopFramebuffer's sheng-vsync=<Hz> overrides getRefreshAttributes (slot 301) and ticks vsync from a work loop so the render server paces at that rate (sheng-vsync-fixed=1 pins min = max interval). The idle desktop submits 6 command buffers per 250 ms at 120 Hz.", "ishtar's panel is DSI command mode with tear check and autorefresh, so its scan rate is whatever timing UEFI programmed; sheng-vsync alone only changes pacing.", "Old port (old 2025): DPU page flip with double buffering in the 45 MB UEFI carve-out, both VIG pipes + one CTL flush, was tear-free (953 flips, 0 timeouts); GPU-written surfaces need dc civac before scanout.", "Old port: iOS powers the panel off after the lock screen and ishtar has no WLED, so the framebuffer was kept on (old 2009)."]
 completion = ["SpringBoard renders at the iPhone canvas, scaled to the full panel, with measured frame timing; then 120 Hz measured."]
 limits = ["abi/legacy-display-24A446-d94ap.json is ported; sheng's builder (build-gop-legacy-display-27.py) reads legacy-display-24A446.json beside itself, so stage 1 copies the builder into scripts/ with the ported record under that name."]
-next_action = ["Copy build-gop-legacy-display-27.py with the iPhone17,2 record and enable stage 1."]
+next_action = ["Copy build-gop-legacy-display-27.py with the iPhone17,2 record and enable stage 1; read the tear-check counters once to learn the panel rate UEFI leaves."]
 
 [[area.evidence]]
 kind = "device"
@@ -241,7 +241,7 @@ status = "host-verified"
 components = ["XnuPrelink", "DarwinBoot"]
 paths = ["patches/xnu-12377/*", "scripts/check-patch-series.py", "reports/patch-series-*"]
 inputs = ["iPhone17,2 27.0.1 24A446 (D94AP, chip 0x8140, board 14): kernelcache.release.iphone17 = xnu-13432.2.10~2/RELEASE_ARM64_T8140, MH_FILESET, 305 entries.", "Kernel: xnu-12377.121.6 + 64 arch + 2 SoC + 4 OS + 5 device patches."]
-configuration = ["Profile ios-27.0.1-24A446: kernelcache_sha256 fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95; prelink roots = iPad roots without com.apple.iokit.IOHIDEventDriver.", "Device series: sheng zzye cpu-idle, zzyf amp, zzyd audio-addon-mount (context), source-storage-runtime, zzzz ipados27-bringup (unchanged from sheng 0dac77e)."]
+configuration = ["Profile ios-27.0.1-24A446: kernelcache_sha256 fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95; prelink roots = iPad roots without com.apple.iokit.IOHIDEventDriver.", "Device series: sheng zzye cpu-idle, zzyf amp, zzyd audio-addon-mount (context), source-storage-runtime, zzzz ipados27-bringup (unchanged from sheng 6ed0ba4)."]
 procedure = ["scripts/ios-identity.py reads the IPSW over HTTP ranges and writes manifest, device tree and decompressed kernelcache to out/ios-identity.", "scripts/check-patch-series.py --xnu <xnu clone> dry-runs the resolved order.", "./unixnu build kernel, payload, bootimg (needs dtc, Xcode iphoneos SDK, lzfse/compression_tool)."]
 findings = ["sm8550-common 23b2049 has no xnu-12377 series and sheng's board reads an unpublished one; zzz-boot-progress.patch (OS layer) needs sheng-platform-power.patch first.", "The bring-up patch needs zzyd-sheng-audio-addon-mount.patch as context in kern_exec.c.", "Four records held iPad17,3 kernelcache addresses (UniXNU profile abi/original-classes.json, UniXNU scripts/data/ioaccelerator-base-abi-24A446.json, sheng scripts/legacy-display-24A446.json and hid-device-24A446.json) plus early_security_init; all are ported to iPhone17,2 (area ios27-identity)."]
 completion = ["Kernel links, prelinks the iPhone17,2 kexts and boots to launchd."]
@@ -252,8 +252,8 @@ next_action = ["Build the stage 0 kernel (./unixnu build kernel) in CI or on a m
 kind = "host"
 reference = "reports/patch-series-xnu-12377.txt"
 command = "~/miniconda3/bin/python3 scripts/check-patch-series.py --xnu ../ref-src/xnu-12377"
-revision = "14f1a2831b12e7c85ae3626401754bec599005a2"
-result = "75/75 patches apply on xnu-12377.121.6 (ac9718fb) in the resolved order."
+revision = "4ecbe02336be74f6b24f5a943aca271cdc744eca"
+result = "75/75 patches apply on xnu-12377.121.6 (ac9718fb) in the resolved order, with sheng 6ed0ba4's bring-up patch (pipeline import region removed)."
 
 [[area]]
 id = "diagnostics"
@@ -261,9 +261,9 @@ status = "implemented"
 components = []
 paths = ["package/Boot*", "package/ShengAudioAbi.h"]
 inputs = ["Framebuffer console (-v), boot-progress checkpoints (zzz-boot-progress), UFS boot log at the end of userdata (sheng-log=1)."]
-configuration = ["package/BootLog.c, BootReset.c, BootWatchdogPolicy.c from sheng 0dac77e; they read sheng-* boot arguments."]
+configuration = ["package/BootLog.c, BootReset.c, BootWatchdogPolicy.c from sheng 6ed0ba4; they read sheng-* boot arguments."]
 procedure = ["Boot stage 0 with -v and boot-progress=2; read the UFS log with sheng's read-sheng-log.py once userdata is laid out."]
-findings = ["The old port had no UART; the early framebuffer console and USB Ethernet were the only log paths."]
+findings = ["The old port had no UART; the early framebuffer console and USB Ethernet were the only log paths.", "BootLog.c follows sheng 6ed0ba4: the diagnostic export uses paged memory and the pipeline import row is gone."]
 completion = ["Every boot leaves a readable log with image and source revisions."]
 limits = ["USB Ethernet logging is not ported yet."]
 next_action = ["Capture the first stage 0 boot on video and in the UFS log."]
