@@ -731,6 +731,76 @@
       "original_sha256": "0985a276dd3d175ca7f44e704160ad3c76824a445657006e513ebfadab51ea08",
       "native_symbol": "_proc_best_name",
       "evidence": "(proc_t p): returns p+0x56d (p_name) when its first byte is nonzero, else p+0x55c (p_comm); follows the matched _proc_name. bsd/kern/kern_proc.c proc_best_name."
+    },
+    {
+      "original": "0xfffffff00b3cfbc8",
+      "original_size": 36,
+      "original_sha256": "89b64e1b0f29c1be767f538adc2ca456d4aa674909bb8fa0d91dc5f4b577ba3b",
+      "native_symbol": "_PE_parse_boot_arg_str",
+      "evidence": "Shifts (name, buf, len) to x1-x3, x0 = boot-args command line, w4 = 1, then b _PE_parse_boot_argn_internal (matched): pexpert/gen/bootargs.c PE_parse_boot_arg_str (force_string TRUE). sandbox calls it with \"rd\" (sixth trap)."
+    },
+    {
+      "original": "0xfffffff00abc46ec",
+      "original_size": 16,
+      "original_sha256": "b0806f7d4b5367c8b9ca2c71a19ff61d7a72e5d88225ea2658028d5104a38c69",
+      "native_symbol": "_host_self",
+      "evidence": "Returns the address of a __DATA.__common global (realhost); the only function between the matched _host_get_io_main and _host_set_atm_diagnostic_flag, where osfmk/kern/host.c has host_self and host_priv_self, which return the same &realhost (identical code folded)."
+    },
+    {
+      "original": "0xfffffff00b0de6e0",
+      "original_size": 24,
+      "original_sha256": "aea2b55f8d66abe630c162c148a2eace9021fda1be01b90575a43db9d1b38486",
+      "native_symbol": "_proc_task",
+      "evidence": "(proc_t p): returns p + 0x768 (the task allocated after the proc) when p_lflag bit 0x2 (P_LHASTASK) is set, else NULL: bsd/kern/kern_proc.c proc_task. Follows the matched _proc_ucred_smr."
+    },
+    {
+      "original": "0xfffffff00b0e1f4c",
+      "original_size": 20,
+      "original_sha256": "cd5df1ddbf7d62221f6bdaabcd1830c0b12a713b3e86ab975f89e0c5b3e7815f",
+      "native_symbol": "_proc_is_translated",
+      "evidence": "(proc_t p): p ? (p_flag >> 17) & 1 : 0, bit 17 = P_TRANSLATED; the next function returns 0 (proc_is_classic). bsd/kern/kern_proc.c, after the matched _pgrp_enter_locked."
+    },
+    {
+      "original": "0xfffffff00b24dff4",
+      "original_size": 12,
+      "original_sha256": "eacee867bca8bd548e83141056717c7521637cf58fc5b0f7a6a52051439ece7b",
+      "native_symbol": "__ZNK11OSMetaClass13getSuperClassEv",
+      "evidence": "Returns this->superClassLink (+0x10); between the matched OSMetaClass::checkMetaCastWithName and OSMetaClass::printInstanceCounts, where libkern/c++/OSMetaClass.cpp has getSuperClass and getKmodName."
+    },
+    {
+      "original": "0xfffffff00b0a053c",
+      "original_size": 12,
+      "original_sha256": "616e3b44557d7376926e8ebd973895cf8ac7fe13cc148d0c3862c5e546e300b7",
+      "native_symbol": "_kauth_cred_getuid",
+      "evidence": "ldr w0, [x0, #0x18]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x18 cr_uid), the order of bsd/kern/kern_credential.c."
+    },
+    {
+      "original": "0xfffffff00b0a0548",
+      "original_size": 12,
+      "original_sha256": "be8f2bb712fe5405d3e06b36561fe151f1172d46bcfdcb08af0bd4712ba81f8c",
+      "native_symbol": "_kauth_cred_getruid",
+      "evidence": "ldr w0, [x0, #0x1c]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x1c cr_ruid), the order of bsd/kern/kern_credential.c."
+    },
+    {
+      "original": "0xfffffff00b0a0554",
+      "original_size": 12,
+      "original_sha256": "6240b6a6309c0e043e5ba016cc8eb9ee21d5247fabbea77e52c9cae3e90b0e38",
+      "native_symbol": "_kauth_cred_getsvuid",
+      "evidence": "ldr w0, [x0, #0x20]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x20 cr_svuid), the order of bsd/kern/kern_credential.c."
+    },
+    {
+      "original": "0xfffffff00b0a0560",
+      "original_size": 12,
+      "original_sha256": "7c921fc862f95f93030a1bb1528f153f8ef915bb3f1bdd710390d820d403e1c5",
+      "native_symbol": "_kauth_cred_getgid",
+      "evidence": "ldr w0, [x0, #0x28]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x28 cr_groups[0]), the order of bsd/kern/kern_credential.c."
+    },
+    {
+      "original": "0xfffffff00b0a056c",
+      "original_size": 12,
+      "original_sha256": "84cc57ef206a54cfeb0c1c53d6f94233e341ebab29cdbec6be52aa9d67a3f975",
+      "native_symbol": "_kauth_cred_getrgid",
+      "evidence": "ldr w0, [x0, #0x68]; ret. One of five consecutive uid/gid getters before the matched _kauth_cred_getsvgid (+0x6c); offsets follow struct posix_cred at +0x18 (0x68 cr_rgid), the order of bsd/kern/kern_credential.c."
     }
   ],
   "data": [
