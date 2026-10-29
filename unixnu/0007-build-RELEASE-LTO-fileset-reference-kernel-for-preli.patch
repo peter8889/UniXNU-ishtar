@@ -1,0 +1,112 @@
+From b68a2caa064667bfeb35f9636ddf506f39b26664 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Fri, 30 Oct 2026 00:24:26 +0100
+Subject: [PATCH 7/7] build: RELEASE+LTO fileset reference kernel for prelink
+
+The kernel step builds the --fileset-reference kernel the OS profile names
+(UNIXNU_FILESET_REFERENCE): the same tree as RELEASE+LTO, without the board's
+flags and archives, symbols kept, no all-kpi.exp export list (it names 48
+Apple-private DART/SPTM/IOMMU functions), an empty native_source_storage_start
+stub, and an iOS deployment target for XNU's LTO 'ld -r' step (else ld builds
+it for macOS). On iPhone17,2 24A446 this takes prelink from 8236 to 16996 of
+21692 functions and from 692 to 150 stubbed kext calls; the first boot
+trapped in corecrypto_kext_start on one of those stubs.
+
+Change-Id: I1a2dc7c5484c563b91970234e2f8e40f84c8fce3
+---
+ profiles/os/ios-27.0.1-24A446/profile.toml |  6 +--
+ scripts/build-xnu-4k-baseline.sh           | 44 +++++++++++++++++-----
+ scripts/unixnu/kernel.py                   |  4 ++
+ 3 files changed, 41 insertions(+), 13 deletions(-)
+
+diff --git a/profiles/os/ios-27.0.1-24A446/profile.toml b/profiles/os/ios-27.0.1-24A446/profile.toml
+index 43d2014..aac6532 100644
+--- a/profiles/os/ios-27.0.1-24A446/profile.toml
++++ b/profiles/os/ios-27.0.1-24A446/profile.toml
+@@ -37,9 +37,9 @@
+ # The AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0: iPad17,3 0xfffffe00092551ac ported to
+ # this kernelcache (AppleMobileFileIntegrity __TEXT_EXEC+0xe7ec, masked code verified; UniXNU-ishtar scripts/kc-port.py).
+ "early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff00921000c"
+-# No --fileset-reference: nothing in UniXNU builds the RELEASE comparison kernel the iPad profile names. It only adds
+-# symbol names to unique code matches; --allow-missing lists what stays unresolved in the prelink report.
+-"extra_args" = ["--allow-missing"]
++# The RELEASE+LTO comparison kernel is built by the kernel step (build-xnu-4k-baseline.sh). Without it the first
++# iPhone17,2 boot trapped in corecrypto_kext_start on one of 692 unmapped kernel calls (8236/21692 functions matched).
++"extra_args" = ["--fileset-reference", "build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf", "--allow-missing"]
+ # The iPad roots minus com.apple.iokit.IOHIDEventDriver, which the iPhone17,2 fileset does not have (the class itself
+ # ships in IOHIDFamily). Every other root is present.
+ "roots" = ["com.apple.AppleFSCompression.AppleFSCompressionTypeZlib", "com.apple.driver.AppleARMPlatform", "com.apple.driver.AppleARMWatchdogTimer", "com.apple.driver.AppleAudioClockLibs", "com.apple.driver.AppleEffaceableStorage", "com.apple.driver.AppleIISController", "com.apple.driver.AppleM2ScalerCSCDriver", "com.apple.driver.AppleMobileFileIntegrity", "com.apple.driver.ApplePMGR", "com.apple.driver.IODARTFamily", "com.apple.filesystems.apfs", "com.apple.iokit.CoreAnalyticsFamily", "com.apple.iokit.IOAVFamily", "com.apple.iokit.IOAudio2Family", "com.apple.iokit.IOCECFamily", "com.apple.iokit.IOCryptoAcceleratorFamily", "com.apple.iokit.IOGPUFamily", "com.apple.iokit.IOHDCPFamily", "com.apple.iokit.IOMobileGraphicsFamily", "com.apple.iokit.IOReportFamily", "com.apple.iokit.IOSlowAdaptiveClockingFamily", "com.apple.iokit.IOStorageFamily", "com.apple.iokit.IOSurface", "com.apple.kec.Libm", "com.apple.kec.corecrypto", "com.apple.kext.AppleMatch", "com.apple.kext.CoreTrust", "com.apple.security.AppleImage4", "com.apple.security.sandbox", "com.apple.iokit.IOHIDFamily"]
+diff --git a/scripts/build-xnu-4k-baseline.sh b/scripts/build-xnu-4k-baseline.sh
+index 1ade502..76553b1 100755
+--- a/scripts/build-xnu-4k-baseline.sh
++++ b/scripts/build-xnu-4k-baseline.sh
+@@ -817,17 +817,41 @@ if not stamp.exists() or stamp.read_text() != identity:
+     stamp.write_text(identity)
+ PY
+ EXTRA_CFLAGS="$EXTRA_CFLAGS -DXNU_BOOT_PROGRESS=$BOOT_PROGRESS"
+-make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iphoneos}" ARCH_CONFIGS=ARM64 \
+-  MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT \
+-  ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG="$XNU_ARCH_STRING" LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY \
+-  ARM64_LINK_ADDR=0xfffffff007004000 ARM64_PLKSEG_ADDR=0xfffffff004004000 \
+-  DEPLOYMENT_TARGET_FLAGS="-miphoneos-version-min=$IOS_VERSION -DXNU_TARGET_OS_IOS" \
+-  DEPLOYMENT_LINKER_FLAGS="-Wl,-ios_version_min,$IOS_VERSION" \
+-  RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" \
+-  BUILD_LTO=0 BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" \
+-  CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} \
+-  OBJROOT="$ROOT/build/xnu/ios-obj" SYMROOT="$ROOT/build/xnu/ios-sym" DSTROOT="$ROOT/build/xnu/ios-dst"
++# xnu_make CONFIG LTO OBJDIR [board]: the 4 KiB iOS kernel of this tree in one kernel configuration; "board" adds the
++# board's compile flags and external archives.
++xnu_make() {
++  make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iphoneos}" ARCH_CONFIGS=ARM64 \
++    MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS="$1" \
++    ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG="$XNU_ARCH_STRING" LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY \
++    ARM64_LINK_ADDR=0xfffffff007004000 ARM64_PLKSEG_ADDR=0xfffffff004004000 \
++    DEPLOYMENT_TARGET_FLAGS="-miphoneos-version-min=$IOS_VERSION -DXNU_TARGET_OS_IOS" \
++    DEPLOYMENT_LINKER_FLAGS="-Wl,-ios_version_min,$IOS_VERSION" ${REFERENCE_MAKE_ARGS[@]+"${REFERENCE_MAKE_ARGS[@]}"} \
++    RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" \
++    BUILD_LTO="$2" BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" \
++    ${4:+CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}"} ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} \
++    OBJROOT="$ROOT/build/xnu/$3-obj" SYMROOT="$ROOT/build/xnu/$3-sym" DSTROOT="$ROOT/build/xnu/$3-dst"
++}
++xnu_make DEVELOPMENT 0 ios board
+ if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ] && [ "$CRYPTO_BOOTSTRAP_MODE" = source ]; then
+   python3 scripts/seal-source-crypto-kernel.py \
+     build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf
+ fi
++# The symbol-bearing RELEASE+LTO kernel that XnuPrelink --fileset-reference compares with Apple's code (the OS profile
++# names its path; unixnu passes it as UNIXNU_FILESET_REFERENCE). Only its names are used, never its addresses, so it
++# is built without the board's flags and archives (the owner instruments refuse RELEASE).
++# ponytail: built once per tree; delete the file to rebuild it after a source change.
++if [ -n "${UNIXNU_FILESET_REFERENCE:-}" ] && [ ! -f "$UNIXNU_FILESET_REFERENCE" ] && [ -z "${XNU_BUILD_TARGET:-}" ]; then
++  # Keep its symbols, and no export list: all-kpi.exp names 48 Apple-private DART/SPTM/IOMMU functions the public
++  # source does not define (DEVELOPMENT links without the list).
++  # The board archives stay out; the one entry point the patched bsd_init always calls gets an empty stub.
++  REFERENCE_STUB="$ROOT/build/xnu/fileset-reference-stub.o"
++  printf 'void native_source_storage_start(void) {}\n' | xcrun -sdk "${XNU_SDKROOT:-iphoneos}" clang -arch arm64e -mkernel \
++    -miphoneos-version-min="$IOS_VERSION" -x c -c - -o "$REFERENCE_STUB"
++  # XNU's LTO "ld -r" step gets no deployment target, so ld builds it for macOS and refuses the iOS nonlto.o.
++  REFERENCE_MAKE_ARGS=(LDFLAGS_KERNEL_ONLY_CONFIG_RELEASEARM64= LDFLAGS_KERNEL_STRIP_LTO=
++    "LDFLAGS_KERNEL_LTO=-Wl,-mllvm,-inline-threshold=100 -miphoneos-version-min=$IOS_VERSION"
++    "LD_KERNEL_ARCHIVES=-L$KERNEL_SDKROOT/usr/local/lib/kernel -lfirehose_kernel $REFERENCE_STUB")
++  xnu_make RELEASE 1 fileset-reference
++  mkdir -p "$(dirname "$UNIXNU_FILESET_REFERENCE")"
++  cp build/xnu/fileset-reference-obj/RELEASE_ARM64_BCM2837/mach.release.bcm2837.unstripped.noctf "$UNIXNU_FILESET_REFERENCE"
++fi
+diff --git a/scripts/unixnu/kernel.py b/scripts/unixnu/kernel.py
+index 15ab67c..4d5604e 100644
+--- a/scripts/unixnu/kernel.py
++++ b/scripts/unixnu/kernel.py
+@@ -64,6 +64,10 @@ def version_env(modules, ctx=None):
+             env['UNIXNU_ROOT_OS_UUID'] = root['os_volume_uuid']
+         if root.get('systemos_volume_uuid'):
+             env['UNIXNU_ROOT_SYSTEMOS_UUID'] = root['systemos_volume_uuid']
++        # The prelink's --fileset-reference kernel is built beside the native one (build-xnu-4k-baseline.sh).
++        extra = ctx.board.get('kernel', {}).get('prelink', {}).get('extra_args', [])
++        if '--fileset-reference' in extra[:-1]:
++            env['UNIXNU_FILESET_REFERENCE'] = extra[extra.index('--fileset-reference') + 1]
+         env['UNIXNU_IPSW_BUILD'] = ctx.board.get('ipsw', {}).get('build', '')
+         env['UNIXNU_BOARD_KIT'] = ctx.board.get('board', {}).get('kit', ctx.name)
+         env['UNIXNU_XNU_ARCH'] = load_toml(ctx.profile_roots['arch'] / 'profile.toml').get('arch', {}).get('name', 'arm64')
+-- 
+2.56.0
+

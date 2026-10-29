@@ -1,0 +1,13 @@
+diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
+index af797d0..419f191 100644
+--- a/osfmk/kern/exception.c
++++ b/osfmk/kern/exception.c
+@@ -966,6 +966,8 @@ exception_triage(
+ 	}
+ #ifdef MACH_BSD
+ 	/* Processes whose exceptions are dumped: launchd, plus the comma-separated names in sheng-exc-name. */
++	/* ishtar: declared here because only DEVELOPMENT/DEBUG builds see it, and the RELEASE prelink reference builds this. */
++	extern int proc_pid(struct proc *);
+ 	char sheng_exc_names[96] = "backboardd,chronod,liveactivitiesd";
+ 	PE_parse_boot_argn("sheng-exc-name", sheng_exc_names, sizeof(sheng_exc_names));
+ 	bool sheng_exc_match = false;

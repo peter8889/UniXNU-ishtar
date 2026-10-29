@@ -1,7 +1,7 @@
 From 0e1685968ac40f74f8c0a91dea909773322fea88 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 23:07:22 +0100
-Subject: [PATCH 6/6] build: iPhone17,2 prelink without the RELEASE reference;
+Subject: [PATCH 6/7] build: iPhone17,2 prelink without the RELEASE reference;
  entry probe fixes for fileset kernels
 
 - profile: drop --fileset-reference (nothing builds that RELEASE kernel; it
