@@ -2,7 +2,8 @@
 # Published UniXNU-sm8550-common (23b2049) has only an 11215 series; sheng's iPadOS 27 branch reads an unpublished
 # soc:patches/xnu-12377/series. These are the published SoC patches that still apply to 12377. Replace this layer with
 # soc:patches/xnu-12377/series once upstream publishes it.
-# start.s hunk of native-smp-secondary.patch: SM8550 numbers cores in MPIDR Aff1 (12377 arch already sets MAX_CPUS 8).
+# native-smp-secondary.patch keeps only its start.s hunk (SM8550 numbers cores in MPIDR Aff1); the board_config.h hunk
+# is dropped because the 12377 arch layer already gives BCM2837 MAX_CPUS 8.
 native-smp-secondary.patch
 # Unchanged from sm8550-common; zzz-boot-progress.patch (OS layer) patches its bsd_init.c lines.
 sheng-platform-power.patch
