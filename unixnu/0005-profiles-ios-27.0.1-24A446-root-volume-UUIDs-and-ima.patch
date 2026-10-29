@@ -1,0 +1,38 @@
+From 1e3cd908ca74bce01d69f32e333ee2f2cebfbbb9 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 22:46:43 +0100
+Subject: [PATCH 5/5] profiles: ios-27.0.1-24A446 [root] volume UUIDs and image
+ digests
+
+Change-Id: I46ad5c91b13471130b49e76fbb1864607abe272f
+---
+ profiles/os/ios-27.0.1-24A446/profile.toml | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/profiles/os/ios-27.0.1-24A446/profile.toml b/profiles/os/ios-27.0.1-24A446/profile.toml
+index f3623c1..8108ac2 100644
+--- a/profiles/os/ios-27.0.1-24A446/profile.toml
++++ b/profiles/os/ios-27.0.1-24A446/profile.toml
+@@ -152,12 +152,12 @@ commit = "1f4f5265b319111142f1bf3a27d4484ef5a98314"
+ windows = [{ name = "OS", component = "OS" }, { name = "SystemOS", component = "Cryptex1,SystemOS", optional = true }]
+ 
+ [root]
+-# REQUIRED: APFS volume UUIDs and digests of the decrypted iPhone17,2 images (OS = 043-69909-664.dmg.aea,
+-# Cryptex1,SystemOS = 043-68526-711.dmg.aea). Decrypting needs `ipsw fw aea --key` + /usr/bin/aea (unixnu ipsw.decrypt_aea).
+-os_volume_uuid = "REQUIRED_OS_VOLUME_UUID"
+-os_image_sha256 = "REQUIRED_OS_IMAGE_SHA256"
+-systemos_volume_uuid = "REQUIRED_SYSTEMOS_VOLUME_UUID"
+-systemos_image_sha256 = "REQUIRED_SYSTEMOS_IMAGE_SHA256"
++# The decrypted iPhone17,2 images (OS = 043-69909-664.dmg.aea, Cryptex1,SystemOS = 043-68526-711.dmg.aea): raw APFS
++# containers without a partition map, so the .dmg sha256 is the raw disk digest the root policies sign.
++os_volume_uuid = "E3F4AED0-4454-4D5B-833C-E27E99C4F67B"
++os_image_sha256 = "4b8719fe44a2b80cba9e108ebcec91b6b8a03a3c3ffe353befce3b100f2e6f25"
++systemos_volume_uuid = "8B599D21-9ABD-4050-8BA2-C61349890BED"
++systemos_image_sha256 = "f6d10101770604271c332d27290a48558ceb34f041c4020aae07ee6ca80dbb1b"
+ 
+ [payload.adt]
+-root_match_volume_uuid = "REQUIRED_OS_VOLUME_UUID"
++root_match_volume_uuid = "E3F4AED0-4454-4D5B-833C-E27E99C4F67B"
+-- 
+2.56.0
+
