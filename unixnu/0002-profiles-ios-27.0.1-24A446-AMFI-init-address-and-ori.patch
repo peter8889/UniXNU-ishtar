@@ -1,0 +1,132 @@
+From eccb0f0f55447ee17b7785eb3641aa168eb2e595 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 13:53:38 +0100
+Subject: [PATCH 2/2] profiles: ios-27.0.1-24A446 AMFI init address and
+ original-classes ABI
+
+Both ported from the iPad17,3 profile to the iPhone17,2 kernelcache by
+UniXNU-ishtar scripts/kc-port.py (fileset entry + segment offset, verified by
+masked code and chained-pointer comparison). Collection slide is 0: the iPhone
+fileset already sits at XNU's link address.
+---
+ .../abi/original-classes.json                 | 90 +++++++++++++++++++
+ profiles/os/ios-27.0.1-24A446/profile.toml    |  6 +-
+ 2 files changed, 93 insertions(+), 3 deletions(-)
+ create mode 100644 profiles/os/ios-27.0.1-24A446/abi/original-classes.json
+
+diff --git a/profiles/os/ios-27.0.1-24A446/abi/original-classes.json b/profiles/os/ios-27.0.1-24A446/abi/original-classes.json
+new file mode 100644
+index 0000000..4a56058
+--- /dev/null
++++ b/profiles/os/ios-27.0.1-24A446/abi/original-classes.json
+@@ -0,0 +1,90 @@
++{
++ "kernelcache_sha256": "fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95",
++ "addresses": "original kernelcache VAs; add the prelink collection slide for the linked kernel",
++ "classes": {
++  "IOMobileFramebufferLegacy": {
++   "bundle": "com.apple.iokit.IOMobileGraphicsFamily",
++   "size": "0x1dd8",
++   "vtable": "0xfffffff0082d1ff0",
++   "slots": 379,
++   "base_slots": 168,
++   "meta_class": "0xfffffff00b95ca58",
++   "constructor": "0xfffffff00a1898f4",
++   "destructor": "0xfffffff00a18992c",
++   "pure_virtual": "0xfffffff00b41c76c",
++   "slot": {
++    "isMainDisplay": 186,
++    "getDotPitch": 190,
++    "supportedFrameInfo": 216,
++    "getDisplayDimensions": 261,
++    "startHardware": 305,
++    "kickSwapQueue": 307,
++    "completeCurrentSwap": 312,
++    "validateSwap": 313,
++    "getRefreshAttributes": 319,
++    "collectCompletionReports": 358
++   },
++   "pure_slots": [
++    214,
++    216,
++    257,
++    258,
++    324,
++    325,
++    358,
++    359,
++    366
++   ],
++   "field": {
++    "current_swap": "0x1a40",
++    "pending_head": "0x1a48",
++    "pending_tail": "0x1a50",
++    "vsync_clients": "0x1ab8",
++    "display_width": "0x1bf0",
++    "display_height": "0x1bf4"
++   },
++   "function": {
++    "vsync_notify": "0xfffffff00a193754",
++    "set_refresh_properties": "0xfffffff00a197928"
++   }
++  },
++  "IOMFBSwapIORequest": {
++   "field": {
++    "source_rects": "0x11",
++    "destination_rects": "0x51",
++    "layers_updated": "0x3d8",
++    "layers_disabled": "0x3dc",
++    "background": "0x3e0",
++    "options": "0x3e4",
++    "destination_width": "0x3f0",
++    "destination_height": "0x3f4",
++    "surfaces": "0xb80",
++    "queue_next": "0xd38",
++    "queue_previous": "0xd40",
++    "request_id": "0x3d4"
++   }
++  },
++  "IOSurface": {
++   "bundle": "com.apple.iokit.IOSurface",
++   "function": {
++    "descriptor": "0xfffffff00a3354c4",
++    "width": "0xfffffff00a3355c8",
++    "height": "0xfffffff00a3355d4",
++    "stride": "0xfffffff00a3355ec",
++    "allocation": "0xfffffff00a332408",
++    "format": "0xfffffff00a3355b0",
++    "planes": "0xfffffff00a33561c"
++   }
++  },
++  "IOHIDDevice": {
++   "bundle": "com.apple.iokit.IOHIDFamily",
++   "size": "0xd0",
++   "vtable": "0xfffffff0082b26a0",
++   "slots": 207,
++   "base_slots": 168,
++   "meta_class": "0xfffffff00b954580",
++   "constructor": "0xfffffff00a0b61f4",
++   "destructor": "0xfffffff00a0b622c"
++  }
++ }
++}
+diff --git a/profiles/os/ios-27.0.1-24A446/profile.toml b/profiles/os/ios-27.0.1-24A446/profile.toml
+index a355759..f3623c1 100644
+--- a/profiles/os/ios-27.0.1-24A446/profile.toml
++++ b/profiles/os/ios-27.0.1-24A446/profile.toml
+@@ -34,9 +34,9 @@
+ # sha256 of the decompressed arm64e Mach-O (kernelcache.release.iphone17, MH_FILESET, 305 entries).
+ "kernelcache_sha256" = "fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95"
+ "slide" = "-0x1000000"
+-# REQUIRED: the iPhone17,2 address of the AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0
+-# (the iPad17,3 one is 0xfffffe00092551ac). Locate it in this kernelcache before the first prelink.
+-"early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=REQUIRED_IPHONE17_2_ADDRESS"
++# The AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0: iPad17,3 0xfffffe00092551ac ported to
++# this kernelcache (AppleMobileFileIntegrity __TEXT_EXEC+0xe7ec, masked code verified; UniXNU-ishtar scripts/kc-port.py).
++"early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff00921000c"
+ "extra_args" = ["--fileset-reference", "build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf", "--allow-missing"]
+ # The iPad roots minus com.apple.iokit.IOHIDEventDriver, which the iPhone17,2 fileset does not have (the class itself
+ # ships in IOHIDFamily). Every other root is present.
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,20 @@
+{
+ "kernelcache_sha256": "fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95",
+ "collection_slide": "0x0",
+ "metaclass": "0xfffffff00b952818",
+ "instance_bytes": 136,
+ "virtual_entries": 168,
+ "operational_overrides": [],
+ "metadata_overrides": [
+  0,
+  1,
+  7
+ ],
+ "protected_compatible_constructor_aliases": [
+  "0xfffffff00a04e610",
+  "0xfffffff00a04e648"
+ ],
+ "nondeleting_destructor": "0xfffffff00a04e680",
+ "get_meta_class": "0xfffffff00a04e6f0",
+ "evidence": "IOGPUFamily static initializer at 0xfffffe000a14da80 constructs IOAcceleratorES::gMetaClass with size 0x88. vtable 0xfffffe000832f2e8 (+0x10 address point) has 168 IOService entries; only slots 0, 1 (destructors 0xfffffe000a14da08, 0xfffffe000a14da10) and 7 (getMetaClass) differ from IOService's. Both constructors call IOService::IOService(const OSMetaClass *) and store the signed vtable (DA, 0xcda1); the nondeleting destructor tail-calls IOService::~IOService. [Addresses in this text are from kernelcache 38e6d9fa; the fields above were ported to fa07057b by scripts/kc-port.py.]"
+}

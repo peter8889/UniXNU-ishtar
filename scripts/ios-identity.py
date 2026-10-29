@@ -84,7 +84,10 @@ def main():
     firmware = next(f for f in device['firmwares'] if f['buildid'] == args.build)
     archive = zipfile.ZipFile(RangeFile(firmware['url']))
     manifest = plistlib.loads(archive.read('BuildManifest.plist'))
-    identity = next(i for i in manifest['BuildIdentities'] if i['Info']['RestoreBehavior'] == 'Erase')
+    # Multi-device IPSWs (iPad17,1-4) carry one identity per board: pick this product's.
+    board = device['boards'][0]['boardconfig'].lower()
+    identity = next(i for i in manifest['BuildIdentities']
+                    if i['Info']['RestoreBehavior'] == 'Erase' and i['Info']['DeviceClass'] == board)
     members = {k: v['Info']['Path'] for k, v in identity['Manifest'].items() if 'Info' in v and 'Path' in v['Info']}
     summary = {'url': firmware['url'], 'ipsw_sha256': firmware.get('sha256sum'), 'product': args.product,
                'version': manifest['ProductVersion'], 'build': manifest['ProductBuildVersion'],

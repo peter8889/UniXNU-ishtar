@@ -1,0 +1,5 @@
+0xfffffe00092551ac -> 0xfffffff00921000c  offset com.apple.driver.AppleMobileFileIntegrity __TEXT_EXEC+0xe7ec
+../UniXNU-sheng/scripts/legacy-display-24A446.json: 20 addresses ported {'offset': 20, 'search': 0}, 0 failed
+../UniXNU-sheng/scripts/hid-device-24A446.json: 8 addresses ported {'offset': 8, 'search': 0}, 0 failed
+../UniXNU/profiles/os/ipados-27.0.1-24A446/abi/original-classes.json: 22 addresses ported {'offset': 21, 'search': 1}, 0 failed
+../UniXNU/scripts/data/ioaccelerator-base-abi-24A446.json: 5 addresses ported {'offset': 5, 'search': 0}, 0 failed
