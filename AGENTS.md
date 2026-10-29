@@ -22,7 +22,8 @@ Shared SM8550 code belongs to `UniXNU-sm8550-common`; build tools, OS profiles a
   Python, `~/miniconda3/bin/python3` (3.13) for UniXNU, `/usr/bin/python3` for HTTPS, macOS `compression_tool` and
   `aea`. Build and boot steps run on a machine with the tools listed in docs/HANDOFF.md.
 - Keep upstream file names, boot-argument names (`sheng-*`), class names and bundle IDs when copying from sheng or
-  UniXNU, so diffs against upstream stay readable. Record the source commit of every copy.
+  UniXNU for now, and record the source commit of every copy. Renaming to ishtar is planned once the board boots
+  (docs/HANDOFF.md, "Rename to ishtar").
 - `board.kit` stays `sheng` until UniXNU's build scripts stop hard-coding `kits/sheng`.
 - Any record holding original kernelcache addresses must be the iPhone17,2 one (kernelcache sha256
   `fa07057b...5f95`), never the iPad17,3 one (`38e6d9fa...780a`).

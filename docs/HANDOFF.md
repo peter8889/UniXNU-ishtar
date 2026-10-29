@@ -33,7 +33,8 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
 - **Ask the user before** `fastboot flash userdata` (erases Android user data), before pushing anything, and before
   any other `fastboot flash`. `fastboot boot <img>` is the normal way to test: nothing persists.
 - Never commit Apple, Qualcomm or Xiaomi binaries, keys or the unique chip ID (`.gitignore` covers the usual names).
-- Keep sheng/UniXNU file names, boot-argument names (`sheng-*`) and symbols when copying; the user declined renaming.
+- Keep sheng/UniXNU file names, boot-argument names (`sheng-*`) and symbols for now. Renaming to ishtar is planned
+  but deferred to save time until the board boots; see "Rename to ishtar" in section 6.
 - Every change updates the owning `porting.toml` area (findings or evidence); host/device evidence needs the full
   40-character commit. Old-port results are hardware facts, not evidence for this implementation.
 - After editing the UniXNU branch, re-export its patches into this repo (from this repo's root):
@@ -253,6 +254,23 @@ sha256 from `boot.json`.
 To re-port records after an upstream change to sheng's or UniXNU's iPad records:
 `scripts/ios-identity.py --product iPad17,3 --out out/ios-identity-ipad17,3`, then
 `scripts/kc-port.py <iPad kc> <iPhone kc> --record <record> --out abi/<name>-d94ap.json` (must report 0 failed).
+
+### Rename to ishtar (planned, after the board boots)
+
+The user wants no `sheng` in this repository's names. Deferred only to save time. In order of cost:
+
+1. File names (safe, local): `git mv` `zzye-sheng-cpu-idle` -> `zzye-ishtar-cpu-idle`, `zzyf-sheng-amp` ->
+   `zzyf-ishtar-amp`, `zzyd-sheng-audio-addon-mount` -> `zzyd-ishtar-audio-addon-mount`,
+   `zzzz-sheng-ipados27-bringup` -> `zzzz-ishtar-ios27-bringup`, `soc/sheng-platform-power` ->
+   `soc/ishtar-platform-power`, `package/ShengAudioAbi.h` (and its include in `BootLog.c`). Update both `series`
+   files (keep the upstream name as a comment for diffs), `porting.toml`, `docs/MIGRATION.md`, then rerun
+   `check-patch-series.py` (must stay 75/75) and refresh `reports/`.
+2. Boot arguments `sheng-*` (`sheng-log`, `sheng-data-reset`, `sheng-vsync`, ...): read by the copied package,
+   the bring-up patch and the ShengUfs/GopFramebuffer components, so renaming them means patching those
+   components too (local forks or upstream options).
+3. Identifiers fixed by UniXNU: `XNU_SHENG_PMGR` / `sheng_pmgr_run` (patched again by UniXNU's
+   `zzz-boot-progress.patch`), `board.kit = "sheng"` (UniXNU scripts hard-code `kits/sheng`), component IDs
+   `ShengUfs`, `ShengHidInput`. These need UniXNU changes first (e.g. scripts taking `board.kit`).
 
 ## 7. Report back
 
