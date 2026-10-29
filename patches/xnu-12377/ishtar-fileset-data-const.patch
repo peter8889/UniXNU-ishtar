@@ -1,0 +1,19 @@
+diff --git a/libsa/lastkerneldataconst.c b/libsa/lastkerneldataconst.c
+index f22e95e..c840072 100644
+--- a/libsa/lastkerneldataconst.c
++++ b/libsa/lastkerneldataconst.c
+@@ -39,8 +39,12 @@
+  */
+ 
+ #if defined(__arm64__)
+-/* PAGE_SIZE on ARM64 is an expression derived from a non-const global variable */
+-#define PAD_SIZE        PAGE_MAX_SIZE
++/*
++ * ishtar: one byte, not PAGE_MAX_SIZE. In the arm64e fileset __DATA_CONST is its own page-aligned segment, so the
++ * separator page is not needed, and the iPhone17,2 kernelcache leaves the native constants no room for it: Apple's
++ * kernel has 0xdc000 + 0x4000 before the first retained kext constants (AppleARMPlatform), ours needed 0x120000 + 0x4000.
++ */
++#define PAD_SIZE        1
+ #else
+ #define PAD_SIZE        PAGE_SIZE
+ #endif

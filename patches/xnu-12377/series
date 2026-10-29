@@ -9,3 +9,6 @@ zzyf-ishtar-amp.patch
 zzyd-ishtar-audio-addon-mount.patch
 source-storage-runtime.patch
 zzzz-ishtar-ios27-bringup.patch
+# Shrinks XNU's data_const_padding page so the native __DATA_CONST fits before the iPhone17,2 kernelcache's first retained
+# kext constants (XnuPrelink fileset layout).
+ishtar-fileset-data-const.patch

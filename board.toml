@@ -97,7 +97,9 @@
 
 
 ["components"]
-"include" = ["ArmDTPlatform", "ArmCpu", "XnuPrelink", "DarwinBoot", "ShengUfs", "RamBlock", "GopFramebuffer", "AppleKeyStoreState", "Adreno740", "AdrenoMetal"]
+# Stage 0. Every selected kernel-stage component must also be in [kernel] archives, so Adreno740 and AdrenoMetal join
+# with their stage 3 archives (sheng: "component:Adreno740", "build-adreno740-kits.py", "build-adreno740-accelerator.py").
+"include" = ["ArmDTPlatform", "ArmCpu", "XnuPrelink", "DarwinBoot", "ShengUfs", "RamBlock", "GopFramebuffer", "AppleKeyStoreState"]
 
 
 ["adt"]
