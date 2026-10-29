@@ -25,7 +25,7 @@ Shared SM8550 code belongs to `UniXNU-sm8550-common`; build tools, OS profiles a
   (boot arguments `sheng-*`, kernel symbols, component IDs, class names, bundle IDs) and record the source commit
   of every copy; the list and how to rename them is in docs/HANDOFF.md, "Rename to ishtar".
 - Trusted sources only (docs/HANDOFF.md section 2); the user pushes, agents commit locally.
-- `board.kit` is `ishtar`; it needs the UniXNU `ishtar/ios27` branch, whose build scripts read `kits/<board.kit>`.
+- `board.kit` is `ishtar`; it needs UniXNU from markakash/UniXNU `main`, whose build scripts read `kits/<board.kit>`.
 - Any record holding original kernelcache addresses must be the iPhone17,2 one (kernelcache sha256
   `fa07057b...5f95`), never the iPad17,3 one (`38e6d9fa...780a`).
 - Nothing is flashed except the userdata windows, and only on explicit request: they erase Android user data.

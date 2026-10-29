@@ -36,7 +36,7 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
 - **Ask the user before** `fastboot flash userdata` (erases Android user data), before pushing anything, and before
   any other `fastboot flash`. `fastboot boot <img>` is the normal way to test: nothing persists.
 - Never commit Apple, Qualcomm or Xiaomi binaries, keys or the unique chip ID (`.gitignore` covers the usual names).
-  Exception by design: `Binaries/ishtar` lives in the user's own fork of Device-Binaries (T0); ask before making it public.
+  Exception by design: `Binaries/ishtar` lives in the user's own copy of Device-Binaries (T0); ask before making it public.
 - Trusted sources only: UniXNU org repos, the submodules they pin (Project-Silicium, Microsoft Mu, OpenSSL), Apple
   OSS, AOSPA's ishtar kernel, the user's own repos and stock dump. Do not pull in other forks (e.g. wh1stl3/uefi-nuwa)
   or prebuilt blobs from elsewhere without asking.
@@ -46,7 +46,7 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
   40-character commit. Old-port results are hardware facts, not evidence for this implementation.
 - After editing the UniXNU or uefi-ishtar branch, re-export it into this repo (from this repo's root), then ask the
   user to push (section 8):
-  `rm unixnu/*.patch && git -C ../UniXNU format-patch upstream/feat/ipados27-gpu-parity..ishtar/ios27 -o "$PWD/unixnu"`
+  `rm unixnu/*.patch && git -C ../UniXNU format-patch upstream/feat/ipados27-gpu-parity..main -o "$PWD/unixnu"`
   `rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`
 
 ## 3. Machine
@@ -73,9 +73,9 @@ All repositories sit side by side in one directory (`$W` below).
 W=~/src/ishtar-ios27 && mkdir -p $W && cd $W
 # 1. This repository: the user's GitHub (or a bundle: git clone ishtar-ios27.bundle UniXNU-ishtar)
 git clone https://github.com/markakash/UniXnu-ishtar UniXNU-ishtar
-# 2. UniXNU with this port's commits (iOS 27 profile, kits/<board.kit>): the user's fork, branch ishtar/ios27
-#    (or: clone UniXNU/UniXNU, switch -c ishtar/ios27 origin/feat/ipados27-gpu-parity, git am ../UniXNU-ishtar/unixnu/*.patch)
-git clone -b ishtar/ios27 https://github.com/markakash/UniXNU UniXNU
+# 2. UniXNU with this port's commits (iOS 27 profile, kits/<board.kit>): the user's repo (new repo, not a GitHub
+#    fork), branch main (or: clone UniXNU/UniXNU, switch -c main origin/feat/ipados27-gpu-parity, git am ../UniXNU-ishtar/unixnu/*.patch)
+git clone https://github.com/markakash/UniXNU UniXNU
 git -C UniXNU remote add upstream https://github.com/UniXNU/UniXNU && git -C UniXNU fetch upstream
 # 3. References
 git clone https://github.com/UniXNU/UniXNU-sm8550-common                                   # 23b2049
@@ -84,9 +84,9 @@ git clone https://github.com/markakash/UniXNU-ishtar-old ishtar                 
 git clone --depth 1 -b vauxite https://github.com/AOSPA/android_device_xiaomi_ishtar-kernel # stock dtbs/
 git clone --filter=blob:none https://github.com/apple-oss-distributions/xnu ref-src/xnu-12377 \
   && git -C ref-src/xnu-12377 checkout ac9718fb1af618d5ce8678d0dc6e8a58f252216f
-# 4. Firmware: UniXNU's uefi-sheng + this port's ishtarPkg commit, branch ishtar (the user's fork once pushed;
+# 4. Firmware: UniXNU's uefi-sheng + this port's ishtarPkg commit, branch ishtar (the user's repo once pushed;
 #    until then: clone UniXNU/uefi-sheng, switch -c ishtar 20ac23d5, git am ../UniXNU-ishtar/firmware/*.patch)
-git clone -b ishtar <user's uefi-ishtar fork> uefi-ishtar
+git clone -b ishtar <user's uefi-ishtar repo> uefi-ishtar
 git -C uefi-ishtar submodule update --init --recursive    # Binaries gains ishtar/ in T0
 ```
 
@@ -139,10 +139,10 @@ The user has a dump of ishtar's stock HyperOS. Nothing below is downloaded from 
    `grep -rhoE 'Binaries/ishtar/[^ }]+' Platforms/Xiaomi/ishtarPkg | sort -u | while read f; do [ -e "$f" ] || echo MISSING $f; done`
    Copy the FFS GUID and UI name of `Panel_M1_42_02_0a_ltpo_dsc_cmd.xml` into `ishtarPkg/Include/RAW.inc`
    (the current GUID there is sheng's placeholder; it only matters with `USE_CUSTOM_DISPLAY_DRIVER = 1`).
-3. **Host the set.** Fork `Project-Silicium/Device-Binaries` under the user's account (private is fine; ask before
-   making it public), add `ishtar/` with a README (source ROM, versions, sha256 of the uefi image), push. In
-   uefi-ishtar point `.gitmodules` `Binaries` at the fork, bump the submodule to that commit, commit on `ishtar`,
-   re-export `firmware/`.
+3. **Host the set.** The user creates a repo with `Project-Silicium/Device-Binaries` history (private is fine; ask
+   before making it public); add `ishtar/` with a README (source ROM, versions, sha256 of the uefi image) and ask the
+   user to push. In uefi-ishtar point `.gitmodules` `Binaries` at that repo, bump the submodule to that commit,
+   commit on `ishtar`, re-export `firmware/`.
 4. **Check the platform config.** Diff the extracted `RawFiles/uefiplat.cfg` against
    `ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c` (sheng's values: single core, display thread off)
    and its memory map section against `MemoryMapLib.c`. Keep sheng's run-time choices unless ishtar's values are
@@ -154,7 +154,7 @@ The user has a dump of ishtar's stock HyperOS. Nothing below is downloaded from 
    `adb shell su -c 'cat /sys/firmware/fdt' > ../uefi-ishtar/Resources/DTBs/ishtar.dtb` (boot-image DTB, not in git)
    and `adb shell su -c 'cat /proc/iomem' | grep "System RAM"` (needed by T9).
 
-Record: area `firmware` (versions, hashes, fork URL and commit, config differences).
+Record: area `firmware` (versions, hashes, Binaries repo URL and commit, config differences).
 
 ### T1. Userdata geometry (phone in Android or fastboot)
 
@@ -212,7 +212,7 @@ Take the APFS **volume** UUID of each image (not the container UUID); detach aft
 `profiles/os/ios-27.0.1-24A446/profile.toml` in UniXNU: `os_volume_uuid`, `os_image_sha256`, `systemos_volume_uuid`,
 `systemos_image_sha256`, and `[payload.adt] root_match_volume_uuid = os_volume_uuid`. The digests are the sha256 of
 the decrypted UDIF `.dmg` files (what `build-owner-os-policy.py` hashes and what `verification.json image_sha256`
-must equal). Commit on `ishtar/ios27`, re-export to `unixnu/`.
+must equal). Commit on UniXNU `main`, re-export to `unixnu/`.
 Record: area `storage`.
 
 ### T5. Owner root policies (`build/verified-root-24A446/`)
@@ -328,7 +328,7 @@ To re-port records after an upstream change to sheng's or UniXNU's iPad records:
 
 Done (everything this port owns): patch files `zzye-ishtar-cpu-idle`, `zzyf-ishtar-amp`,
 `zzyd-ishtar-audio-addon-mount`, `zzzz-ishtar-ios27-bringup`, `soc/ishtar-platform-power`; `board.kit = "ishtar"`
-(UniXNU `ishtar/ios27` commit "build: read the board package from kits/<board.kit>"); the audio ABI
+(UniXNU commit "build: read the board package from kits/<board.kit>"); the audio ABI
 (`package/IshtarAudioAbi.h`, `IshtarAudio*`, `ishtar_audio_*`, `IshtarAudio.driver`); the UEFI package
 (`ishtarPkg`, `ISHTAR_VENDOR_HW`, `Ishtar*Dxe` drivers, `Binaries/ishtar`).
 
@@ -347,7 +347,7 @@ Do the kernel-symbol row once the kernel builds (a missed reference shows up as 
 
 ## 7. Report back
 
-For each task: command, full commit of this repo and of `UniXNU` `ishtar/ios27`, output path and sha256, result, and
+For each task: command, full commit of this repo and of UniXNU `main`, output path and sha256, result, and
 what was seen on the phone. Missing inputs and decisions for the user (key handling, flashing) go first.
 
 ## 8. Repositories the user pushes
@@ -357,8 +357,8 @@ The user pushes; agents commit locally and say what to push.
 | Local | Remote | Branch |
 | --- | --- | --- |
 | `UniXNU-ishtar` | `markakash/UniXnu-ishtar` | `main` |
-| `UniXNU` | `markakash/UniXNU` (fork of `UniXNU/UniXNU`) | `ishtar/ios27` |
-| `uefi-ishtar` | the user's fork of `UniXNU/uefi-sheng` | `ishtar` |
-| `Binaries` (uefi-ishtar submodule) | the user's fork of `Project-Silicium/Device-Binaries`, private | default branch, with `ishtar/` (T0) |
+| `UniXNU` | `markakash/UniXNU` (new repo, not a GitHub fork; on the first machine the local branch `ishtar/ios27` was pushed to it) | `main` |
+| `uefi-ishtar` | the user's repo with `UniXNU/uefi-sheng` history | `ishtar` |
+| `Binaries` (uefi-ishtar submodule) | the user's copy of `Project-Silicium/Device-Binaries`, private | default branch, with `ishtar/` (T0) |
 
 Not pushed: `out/`, `ref/`, `local.toml`, `unixnu.local.toml`, `.cache/firmware/`, keys, IPSW members.

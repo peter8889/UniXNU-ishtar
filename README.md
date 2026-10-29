@@ -15,7 +15,7 @@ Bergamota xnu-11215). Its hardware findings carry over; its kernel patches do no
 
 | Input | Where |
 | --- | --- |
-| UniXNU with the `ios-27.0.1-24A446` profile | `../UniXNU`, branch `ishtar/ios27` = `feat/ipados27-gpu-parity` (87bf1f9) + [unixnu/0001-*.patch](unixnu/) |
+| UniXNU with the `ios-27.0.1-24A446` profile | `../UniXNU` = [markakash/UniXNU](https://github.com/markakash/UniXNU) `main`: `feat/ipados27-gpu-parity` (87bf1f9) + [unixnu/*.patch](unixnu/) |
 | SM8550 shared support | `UniXNU-sm8550-common` 23b2049 (`feeds.toml`); SoC patches for xnu-12377 in `patches/xnu-12377/soc/` |
 | sheng device layer | copied from `UniXNU-sheng` `feat/ipados27-gpu-parity` 6ed0ba4: `patches/xnu-12377/`, `package/` |
 | iOS | iPhone17,2 27.0.1 24A446 IPSW (URL and pins in the profile) |
@@ -26,7 +26,7 @@ Bergamota xnu-11215). Its hardware findings carry over; its kernel patches do no
 UniXNU needs Python 3.11+ (`~/miniconda3/bin/python3` here; `/usr/bin/python3` is 3.9). Run from `../UniXNU`:
 
 ```sh
-git switch ishtar/ios27                    # or: git am ../UniXNU-ishtar/unixnu/*.patch
+git clone https://github.com/markakash/UniXNU ../UniXNU   # or: UniXNU/UniXNU + git am ../UniXNU-ishtar/unixnu/*.patch
 PY=~/miniconda3/bin/python3
 $PY ./unixnu defconfig ishtar_ios27_defconfig -D ../UniXNU-ishtar
 $PY ./unixnu fetch -D ../UniXNU-ishtar     # or local.toml (see local.toml.example)
