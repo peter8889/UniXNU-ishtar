@@ -63,14 +63,14 @@ ok   xnu-12377/trustcache-runtime-layout.patch
 ok   xnu-12377/fileset-unmapped-call.patch
 ok   xnu-12377/native-4k-block-split.patch
 ok   soc/native-smp-secondary.patch
-ok   soc/sheng-platform-power.patch
+ok   soc/ishtar-platform-power.patch
 ok   xnu-12377/zzz-boot-progress.patch
 ok   xnu-12377/darwin26-syscalls.patch
 ok   xnu-12377/darwin26-kpi.patch
 ok   xnu-12377/darwin26-shared-region.patch
-ok   xnu-12377/zzye-sheng-cpu-idle.patch
-ok   xnu-12377/zzyf-sheng-amp.patch
-ok   xnu-12377/zzyd-sheng-audio-addon-mount.patch
+ok   xnu-12377/zzye-ishtar-cpu-idle.patch
+ok   xnu-12377/zzyf-ishtar-amp.patch
+ok   xnu-12377/zzyd-ishtar-audio-addon-mount.patch
 ok   xnu-12377/source-storage-runtime.patch
-ok   xnu-12377/zzzz-sheng-ipados27-bringup.patch
+ok   xnu-12377/zzzz-ishtar-ios27-bringup.patch
 75/75 applied on ac9718fb1af618d5ce8678d0dc6e8a58f252216f

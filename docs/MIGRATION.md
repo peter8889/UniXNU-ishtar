@@ -30,7 +30,7 @@ by UniXNU/sheng code, ported as a board component, or dropped.
 | 2028 gpu-maint-knob | old GPU path | | dropped |
 | 2029, 2033 cpufreq | EPSS governor + downshift fix | power area; compare sheng `CpuFreqProbe.cpp` | port later |
 | 2030 usb-drop-evidence | USB diagnostics | network area (USB Ethernet) | port later |
-| 2031 amp-clusters | E/P clusters | `zzyf-sheng-amp.patch` + DTS `unixnu,cluster-type` | covered |
+| 2031 amp-clusters | E/P clusters | `zzyf-ishtar-amp.patch` + DTS `unixnu,cluster-type` | covered |
 | 2032 thread-names | debug names | | dropped |
 | 2034 fbcon-once | console registration fix | | dropped |
 | 2035 adsp-battery | ADSP takeover, GLINK/QRTR battmgr | sheng `AdspFirmware.c`, `QcomGlink.c`, `QcomQrtr.c`, `ShengBattmgr.c` | port later; sheng loads ADSP from XNU |

@@ -18,7 +18,7 @@ index b823dc0d..edf4b1d3 100644
 +	/* The board's audio server plug-in next to the system's (the audio server loads every driver bundle in this directory). */
 +	static const char audio_source[] = "/private/var/ngpu/audio", audio_point[] = "/System/Library/Audio/Plug-Ins/HAL";
 +	native_gpu_addon_mount(p, scratch, 0xa00, audio_source, sizeof(audio_source), audio_point, sizeof(audio_point),
-+	    "/System/Library/Audio/Plug-Ins/HAL/BuiltinAudioPlugin.driver", "/System/Library/Audio/Plug-Ins/HAL/ShengAudio.driver/Info.plist",
++	    "/System/Library/Audio/Plug-Ins/HAL/BuiltinAudioPlugin.driver", "/System/Library/Audio/Plug-Ins/HAL/IshtarAudio.driver/Info.plist",
 +	    &native_gpu_addon4_stage, &native_gpu_addon4_status);
  	native_cryptex_os_view(p, scratch);
  	native_gestalt_cache_drop(p, scratch);

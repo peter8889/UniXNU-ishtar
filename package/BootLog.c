@@ -153,8 +153,8 @@ extern volatile uint64_t native_audio_requests[17] __attribute__((weak_import));
 extern volatile int32_t native_audio_passed __attribute__((weak_import));
 extern volatile uint32_t native_mic_regs[16] __attribute__((weak_import));
 extern volatile int32_t native_mic_capture[8] __attribute__((weak_import));
-#include "ShengAudioAbi.h"
-extern const ShengAudioDiag *sheng_audio_diag(void) __attribute__((weak_import));
+#include "IshtarAudioAbi.h"
+extern const IshtarAudioDiag *ishtar_audio_diag(void) __attribute__((weak_import));
 extern volatile uint64_t native_audio_pa __attribute__((weak_import));
 extern char native_adsp_text[96] __attribute__((weak_import));
 extern volatile int32_t native_battery_stats[16] __attribute__((weak_import));
@@ -1271,9 +1271,9 @@ static size_t compose(char *out, size_t cap, uint32_t slot, unsigned now) {
       at = put(out, at, cap, row, sizeof row);
     }
     // Every distinct property access of the audio server, in order: selector, object, scope letter, g/s (get/set), upper case if it failed.
-    if (&sheng_audio_diag && sheng_audio_diag()) {
-      const ShengAudioTrace *tr = (const ShengAudioTrace *)((const uint8_t *)sheng_audio_diag() - SHENG_AUDIO_DIAG_OFFSET + SHENG_AUDIO_TRACE_OFFSET);
-      const unsigned total = tr->count < SHENG_AUDIO_TRACE_SLOTS ? tr->count : SHENG_AUDIO_TRACE_SLOTS;
+    if (&ishtar_audio_diag && ishtar_audio_diag()) {
+      const IshtarAudioTrace *tr = (const IshtarAudioTrace *)((const uint8_t *)ishtar_audio_diag() - ISHTAR_AUDIO_DIAG_OFFSET + ISHTAR_AUDIO_TRACE_OFFSET);
+      const unsigned total = tr->count < ISHTAR_AUDIO_TRACE_SLOTS ? tr->count : ISHTAR_AUDIO_TRACE_SLOTS;
       for (unsigned first = 0; first < total; first += 20) {
         int n = snprintf(row, sizeof row, "[audio-trace %u/%u]", first, total);
         for (unsigned i = first; i < total && i < first + 20 && n > 0 && n < (int)sizeof row - 12; ++i) {
@@ -1288,8 +1288,8 @@ static size_t compose(char *out, size_t cap, uint32_t slot, unsigned now) {
       }
     }
     // What the plug-in could not answer: loads of the plug-in, then up to 16 'selector'@object/scope entries.
-    if (&sheng_audio_diag && sheng_audio_diag()) {
-      const ShengAudioDiag *d = sheng_audio_diag();
+    if (&ishtar_audio_diag && ishtar_audio_diag()) {
+      const IshtarAudioDiag *d = ishtar_audio_diag();
       int n = snprintf(row, sizeof row, "[audio-props] loads=%u vol=%u sets=%u mix=%u inmiss=%u unknown=%u", d->loads, d->volume_milli, d->volume_sets,
                        d->mix_peak, d->in_misses, d->count);
       for (unsigned i = 0; i < d->count && i < 16 && n > 0 && n < (int)sizeof row - 16; ++i) {
@@ -1299,11 +1299,11 @@ static size_t compose(char *out, size_t cap, uint32_t slot, unsigned now) {
       }
       at = put(out, at, cap, row, sizeof row);
     }
-    // The audio service (ShengAudioService.cpp): state, opens, closes, requests, refused requests, memory maps, the lock sound press, the
+    // The audio service (IshtarAudioService.cpp): state, opens, closes, requests, refused requests, memory maps, the lock sound press, the
     // playback / capture peak, playback periods taken before the plug-in had written them, and the plug-in's write position (frames).
     if (&native_audio_service && native_audio_service[0]) {
-      const ShengAudioControl *ac = &sheng_audio_diag && sheng_audio_diag() ?
-          (const ShengAudioControl *)((const uint8_t *)sheng_audio_diag() - SHENG_AUDIO_DIAG_OFFSET) : NULL;
+      const IshtarAudioControl *ac = &ishtar_audio_diag && ishtar_audio_diag() ?
+          (const IshtarAudioControl *)((const uint8_t *)ishtar_audio_diag() - ISHTAR_AUDIO_DIAG_OFFSET) : NULL;
       snprintf(row, sizeof row, "[audio-service] st=%d opens=%d closes=%d requests=%d refused=%d maps=%d press=%d peak=%d/%d late=%u holes=%u written=%llu",
                native_audio_service[0], native_audio_service[1], native_audio_service[2], native_audio_service[3], native_audio_service[4],
                native_audio_service[5], native_audio_service[6], native_audio_service[7] & 0xffff, (native_audio_service[7] >> 16) & 0xffff,
@@ -1312,8 +1312,8 @@ static size_t compose(char *out, size_t cap, uint32_t slot, unsigned now) {
     }
     // Where the audio server writes and reads relative to the play position (frames): write-ahead least..most, read-behind least..most,
     // frames of the last write, writes.
-    if (&sheng_audio_diag && sheng_audio_diag()) {
-      const ShengAudioDiag *d = sheng_audio_diag();
+    if (&ishtar_audio_diag && ishtar_audio_diag()) {
+      const IshtarAudioDiag *d = ishtar_audio_diag();
       snprintf(row, sizeof row, "[audio-io] ahead=%d..%d behind=%d..%d frames=%u writes=%u overlap=%u/%u total=%u gaps=%u/%u int=%u/%u/%u/%u/%u/%u skew=%d..%d",
                d->ahead_min, d->ahead_max, d->behind_min, d->behind_max, d->io_frames, d->writes, d->overlaps, d->overlap_max,
                d->frames_total, d->gaps, d->gap_frames, d->interval[0], d->interval[1], d->interval[2], d->interval[3], d->interval[4],
@@ -1329,7 +1329,7 @@ static size_t compose(char *out, size_t cap, uint32_t slot, unsigned now) {
         at = put(out, at, cap, row, sizeof row);
       }
     }
-    // The plug-in's last requests (AudioProbe.cpp sheng_audio_request): ms since boot and selector (0/1 output start/stop, 2/3 input).
+    // The plug-in's last requests (AudioProbe.cpp ishtar_audio_request): ms since boot and selector (0/1 output start/stop, 2/3 input).
     if (&native_audio_requests && native_audio_requests[16]) {
       int n = snprintf(row, sizeof row, "[audio-requests]");
       const uint64_t next = native_audio_requests[16], first = next > 16 ? next - 16 : 0;

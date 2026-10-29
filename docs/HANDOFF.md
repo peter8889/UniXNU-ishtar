@@ -26,21 +26,28 @@ Open values (search for `REQUIRED` and `00000000-0000-0000-0000-000000000000`):
 | `[root]` os/systemos volume UUIDs and image sha256, `[payload.adt] root_match_volume_uuid` | UniXNU `profiles/os/ios-27.0.1-24A446/profile.toml` | T4 |
 | `CONFIG_XNU_OWNER_DATA_VOLUME_UUID` | `configs/ishtar_ios27_defconfig` | T7 |
 | `[userdata] last_lba` (derived, may be short) | `board.toml` | T1 |
-| ZAP firmware entry | `proprietary-files.txt` | stage 3, not needed for stage 0 |
-| Boot-image DTB `Resources/DTBs/ishtar.dtb` | `../uefi-ishtar` (not in git) | T9 |
-| DRAM bank 1 entries (inferred, not measured on ishtar) | uefi-ishtar `ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c` | T9 |
+| ZAP firmware entry | `proprietary-files.txt` | T0 (needed at stage 3) |
+| `Binaries/ishtar` (ishtar's stock UEFI modules and raw files) | uefi-ishtar `Binaries` submodule | T0 |
+| Boot-image DTB `Resources/DTBs/ishtar.dtb` | `../uefi-ishtar` (not in git) | T0 |
+| DRAM bank 1 entries (inferred, not measured on ishtar) | uefi-ishtar `ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c` | T0, T9 |
 
 ## 2. Rules
 
 - **Ask the user before** `fastboot flash userdata` (erases Android user data), before pushing anything, and before
   any other `fastboot flash`. `fastboot boot <img>` is the normal way to test: nothing persists.
 - Never commit Apple, Qualcomm or Xiaomi binaries, keys or the unique chip ID (`.gitignore` covers the usual names).
-- Keep sheng/UniXNU file names, boot-argument names (`sheng-*`) and symbols for now. Renaming to ishtar is planned
-  but deferred to save time until the board boots; see "Rename to ishtar" in section 6.
+  Exception by design: `Binaries/ishtar` lives in the user's own fork of Device-Binaries (T0); ask before making it public.
+- Trusted sources only: UniXNU org repos, the submodules they pin (Project-Silicium, Microsoft Mu, OpenSSL), Apple
+  OSS, AOSPA's ishtar kernel, the user's own repos and stock dump. Do not pull in other forks (e.g. wh1stl3/uefi-nuwa)
+  or prebuilt blobs from elsewhere without asking.
+- Names: everything this port owns carries ishtar names (patch files, board kit, audio ABI, UEFI package and
+  drivers). Names shared with upstream components stay as they are; see "Rename to ishtar" in section 6.
 - Every change updates the owning `porting.toml` area (findings or evidence); host/device evidence needs the full
   40-character commit. Old-port results are hardware facts, not evidence for this implementation.
-- After editing the UniXNU branch, re-export its patches into this repo (from this repo's root):
-  `rm unixnu/*.patch && git -C ../UniXNU format-patch origin/feat/ipados27-gpu-parity..ishtar/ios27 -o "$PWD/unixnu"`
+- After editing the UniXNU or uefi-ishtar branch, re-export it into this repo (from this repo's root), then ask the
+  user to push (section 8):
+  `rm unixnu/*.patch && git -C ../UniXNU format-patch upstream/feat/ipados27-gpu-parity..ishtar/ios27 -o "$PWD/unixnu"`
+  `rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`
 
 ## 3. Machine
 
@@ -64,13 +71,12 @@ All repositories sit side by side in one directory (`$W` below).
 
 ```sh
 W=~/src/ishtar-ios27 && mkdir -p $W && cd $W
-# 1. This repository. It is not published yet: ask the user for the remote, or take a bundle from the first machine:
-#    (first machine) git -C UniXNU-ishtar bundle create ishtar.bundle --all
-git clone <remote-or-ishtar.bundle> UniXNU-ishtar
-# 2. UniXNU at the upstream iPadOS 27 branch + this port's profile commits
-git clone https://github.com/UniXNU/UniXNU && cd UniXNU
-git switch -c ishtar/ios27 origin/feat/ipados27-gpu-parity    # was 87bf1f9 when the patches were made
-git am ../UniXNU-ishtar/unixnu/*.patch && cd ..
+# 1. This repository: the user's GitHub (or a bundle: git clone ishtar-ios27.bundle UniXNU-ishtar)
+git clone https://github.com/markakash/UniXnu-ishtar UniXNU-ishtar
+# 2. UniXNU with this port's commits (iOS 27 profile, kits/<board.kit>): the user's fork, branch ishtar/ios27
+#    (or: clone UniXNU/UniXNU, switch -c ishtar/ios27 origin/feat/ipados27-gpu-parity, git am ../UniXNU-ishtar/unixnu/*.patch)
+git clone -b ishtar/ios27 https://github.com/markakash/UniXNU UniXNU
+git -C UniXNU remote add upstream https://github.com/UniXNU/UniXNU && git -C UniXNU fetch upstream
 # 3. References
 git clone https://github.com/UniXNU/UniXNU-sm8550-common                                   # 23b2049
 git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from
@@ -78,13 +84,14 @@ git clone https://github.com/markakash/UniXNU-ishtar-old ishtar                 
 git clone --depth 1 -b vauxite https://github.com/AOSPA/android_device_xiaomi_ishtar-kernel # stock dtbs/
 git clone --filter=blob:none https://github.com/apple-oss-distributions/xnu ref-src/xnu-12377 \
   && git -C ref-src/xnu-12377 checkout ac9718fb1af618d5ce8678d0dc6e8a58f252216f
-# 4. Firmware: UniXNU's uefi-sheng + this port's ishtarPkg commit (firmware/*.patch; local branch 'ishtar', 178bb0b)
-git clone https://github.com/UniXNU/uefi-sheng uefi-ishtar && cd uefi-ishtar
-git switch -c ishtar 20ac23d5 && git am ../UniXNU-ishtar/firmware/*.patch
-git submodule update --init --recursive && cd ..          # Binaries = Project-Silicium Device-Binaries (nuwa set used)
+# 4. Firmware: UniXNU's uefi-sheng + this port's ishtarPkg commit, branch ishtar (the user's fork once pushed;
+#    until then: clone UniXNU/uefi-sheng, switch -c ishtar 20ac23d5, git am ../UniXNU-ishtar/firmware/*.patch)
+git clone -b ishtar <user's uefi-ishtar fork> uefi-ishtar
+git -C uefi-ishtar submodule update --init --recursive    # Binaries gains ishtar/ in T0
 ```
 
-If `git am` conflicts because upstream moved, apply onto `87bf1f9` instead and record the base you used.
+The repository names are the ones the user pushes to (section 8); if a clone fails, ask. If the UniXNU commits
+conflict after an upstream move, rebase them onto `87bf1f9` and record the base you used.
 
 Check the host side reproduces:
 
@@ -104,7 +111,7 @@ cp unixnu.example.toml unixnu.local.toml       # fill in as the tasks below prod
 [build]
 device = "../UniXNU-ishtar"
 uefi = "../uefi-ishtar"
-dtb = "../uefi-ishtar/Resources/DTBs/ishtar.dtb"   # not in git: see T9
+dtb = "../uefi-ishtar/Resources/DTBs/ishtar.dtb"   # not in git: see T0
 unique_chip_id = "<16 hex digits, nonzero, chosen once and kept>"
 trust_cache = "<T6 output>"
 data_ramdisk = "<T7 output>"
@@ -113,6 +120,41 @@ data_ramdisk = "<T7 output>"
 ## 5. Tasks to the first boot
 
 Run in order; each lists what to record. "Record" means: update the named `porting.toml` area and commit.
+
+### T0. Stock HyperOS inputs (on the user's PC that has the stock dump)
+
+The user has a dump of ishtar's stock HyperOS. Nothing below is downloaded from third parties.
+
+1. **Find the images.** A fastboot ROM has `images/uefi.elf`, `xbl_s.melf`, `xbl_config.elf`, `vendor_boot.img`,
+   `dtbo.img`; a partition dump has `uefi_a`, `xbl_a`, `xbl_config_a`, `vendor_boot_a`, `dtbo_a`, `modem_a` and the
+   `odm`/`vendor` images. Record the HyperOS version (old port: `OS3.0.308.0.WMACNXM`) and the UEFI build string
+   (expected `BOOT.MXF.2.1.1-00218-KAILUA-1.36233.1`).
+2. **Extract the UEFI.** Build gus33000's UEFIReader (`git clone https://github.com/gus33000/UEFIReader`,
+   `dotnet build -c Release`; it is the tool Device-Binaries sets are made with) and run it on the uefi image,
+   exactly as the old port did (`ishtar/scripts/extract-stock.sh`, which also splits the vendor_boot DTBs):
+   `dotnet UEFIReader.dll uefi.elf out/uefi`. Lay the result out as `Binaries/ishtar/` in Device-Binaries'
+   format (compare `Binaries/nuwa/`, the same Kailua build): `QcomPkg/Drivers/<Name>/<Name>.inf|.efi|.depex`,
+   `MdeModulePkg/...`, `RawFiles/` (`uefiplat.cfg`, `SecParti.cfg`, `uefipil.cfg`, `Panel_*.xml`, ...).
+   Every path ishtarPkg uses must exist:
+   `grep -rhoE 'Binaries/ishtar/[^ }]+' Platforms/Xiaomi/ishtarPkg | sort -u | while read f; do [ -e "$f" ] || echo MISSING $f; done`
+   Copy the FFS GUID and UI name of `Panel_M1_42_02_0a_ltpo_dsc_cmd.xml` into `ishtarPkg/Include/RAW.inc`
+   (the current GUID there is sheng's placeholder; it only matters with `USE_CUSTOM_DISPLAY_DRIVER = 1`).
+3. **Host the set.** Fork `Project-Silicium/Device-Binaries` under the user's account (private is fine; ask before
+   making it public), add `ishtar/` with a README (source ROM, versions, sha256 of the uefi image), push. In
+   uefi-ishtar point `.gitmodules` `Binaries` at the fork, bump the submodule to that commit, commit on `ishtar`,
+   re-export `firmware/`.
+4. **Check the platform config.** Diff the extracted `RawFiles/uefiplat.cfg` against
+   `ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c` (sheng's values: single core, display thread off)
+   and its memory map section against `MemoryMapLib.c`. Keep sheng's run-time choices unless ishtar's values are
+   required; record every difference in the `firmware` area.
+5. **Firmware files for later stages** (record path and sha256 in `proprietary-files.txt`, files under
+   `.cache/firmware/`): GPU ZAP `odm: /firmware/a740_zap.mbn` (+ `.b00`-`.b02`; the `vendor` split copy is refused
+   by TZ), ADSP `adsp.mdt`/`adsp.b*` and `adsp_dtb.mdt`/`adsp_dtb.b*` from the `modem` partition's FAT `/image`.
+6. **From the phone** (Android, Magisk root):
+   `adb shell su -c 'cat /sys/firmware/fdt' > ../uefi-ishtar/Resources/DTBs/ishtar.dtb` (boot-image DTB, not in git)
+   and `adb shell su -c 'cat /proc/iomem' | grep "System RAM"` (needed by T9).
+
+Record: area `firmware` (versions, hashes, fork URL and commit, config differences).
 
 ### T1. Userdata geometry (phone in Android or fastboot)
 
@@ -215,21 +257,20 @@ uefi-nuwa-based tree is not used. What ishtarPkg already does:
 
 - Same UniXNU integration as sheng: `UniXNU`, `UniXNUDxe`, `DarwinBoot`, `UniXNURamDiskDxe`, DiskIo, FAT.
 - `ISHTAR_VENDOR_HW = 0`: Mu drivers only; `SimpleFbDxe` keeps the panel the stock XBL lit (1440x3200, 60 Hz).
-  The only vendor file is `Binaries/nuwa/RawFiles/SecParti.cfg` (nuwa's set = ishtar's stock UEFI build).
-- Reuses sheng's board drivers by path: keys (identical PMK8550/PM8550 wiring), boot memory, GOP log, depex.
+  The only vendor file built in is `Binaries/ishtar/RawFiles/SecParti.cfg` (T0).
+- Own board drivers (copies of sheng's with new FILE_GUIDs): `IshtarKeyInputDxe` (same PMK8550/PM8550 key
+  wiring as sheng), `IshtarBootMemoryDxe`, `IshtarGopLogDxe`, `IshtarDisplayDepexDxe`. The key driver's host test
+  (`Drivers/IshtarKeyInputDxe/Test/keys_host.c`) has not been run; compile and run it here once.
 - Memory map: sheng's reservations (identical on ishtar); DRAM bank 1 low `0x880000000 + 0x39D00000`, bank 1
   high `0x8C0000000 + 5 GiB`.
 - Boot image: `Resources/Configs/ishtar.toml` from nuwa (header v1, FD at `0xA7100000`).
 
 What this task still has to do:
 
-1. Provide the boot-image DTB, `Resources/DTBs/ishtar.dtb` (not in git): the live FDT from the phone,
-   `adb shell su -c 'cat /sys/firmware/fdt' > ishtar.dtb` (Magisk root, as in the old port), or a copy of
-   `Resources/DTBs/nuwa.dtb` (same `qcom,msm-id` 0x207 rev 2 and `qcom,board-id` 0x10008). Prefer the live one.
-2. Check the DRAM entries against the phone before trusting them: `adb shell su -c 'cat /proc/iomem' | grep "System RAM"`.
-   Bank 1 low must stay inside a System RAM run (nuwa's has a 2 MiB hole at `0x8B9D00000`); bank 1 high can grow
-   to the measured end (old port: `0x8C0000000-0xAFFFFEFFF`).
-3. Build and boot:
+1. Check the DRAM entries against the T0 `/proc/iomem` output before trusting them. Bank 1 low must stay inside a
+   System RAM run (nuwa's 12 GB map has a 2 MiB hole at `0x8B9D00000`); bank 1 high can grow to the measured end
+   (old port: `0x8C0000000-0xAFFFFEFFF`).
+2. Build and boot:
 
 ```sh
 ./unixnu build package -D ../UniXNU-ishtar
@@ -238,7 +279,7 @@ What this task still has to do:
 fastboot boot out/ishtar/ios-27.0.1-24A446/ishtar_ios27/boot/boot.img   # expect the UniXNU menu; nothing persists
 ```
 
-4. Commit any uefi-ishtar change on its `ishtar` branch and re-export it into this repo
+3. Commit any uefi-ishtar change on its `ishtar` branch and re-export it into this repo
    (`rm firmware/*.patch && git -C ../uefi-ishtar format-patch 20ac23d5..ishtar -o "$PWD/firmware"`).
 
 If the screen stays black after ABL: check the framebuffer PCDs in `ishtar.dsc` (1440x3200, 32 bpp) and that the
@@ -282,24 +323,41 @@ To re-port records after an upstream change to sheng's or UniXNU's iPad records:
 `scripts/ios-identity.py --product iPad17,3 --out out/ios-identity-ipad17,3`, then
 `scripts/kc-port.py <iPad kc> <iPhone kc> --record <record> --out abi/<name>-d94ap.json` (must report 0 failed).
 
-### Rename to ishtar (planned, after the board boots)
+### Rename to ishtar
 
-The user wants no `sheng` in this repository's names. Deferred only to save time. In order of cost:
+Done (everything this port owns): patch files `zzye-ishtar-cpu-idle`, `zzyf-ishtar-amp`,
+`zzyd-ishtar-audio-addon-mount`, `zzzz-ishtar-ios27-bringup`, `soc/ishtar-platform-power`; `board.kit = "ishtar"`
+(UniXNU `ishtar/ios27` commit "build: read the board package from kits/<board.kit>"); the audio ABI
+(`package/IshtarAudioAbi.h`, `IshtarAudio*`, `ishtar_audio_*`, `IshtarAudio.driver`); the UEFI package
+(`ishtarPkg`, `ISHTAR_VENDOR_HW`, `Ishtar*Dxe` drivers, `Binaries/ishtar`).
 
-1. File names (safe, local): `git mv` `zzye-sheng-cpu-idle` -> `zzye-ishtar-cpu-idle`, `zzyf-sheng-amp` ->
-   `zzyf-ishtar-amp`, `zzyd-sheng-audio-addon-mount` -> `zzyd-ishtar-audio-addon-mount`,
-   `zzzz-sheng-ipados27-bringup` -> `zzzz-ishtar-ios27-bringup`, `soc/sheng-platform-power` ->
-   `soc/ishtar-platform-power`, `package/ShengAudioAbi.h` (and its include in `BootLog.c`). Update both `series`
-   files (keep the upstream name as a comment for diffs), `porting.toml`, `docs/MIGRATION.md`, then rerun
-   `check-patch-series.py` (must stay 75/75) and refresh `reports/`.
-2. Boot arguments `sheng-*` (`sheng-log`, `sheng-data-reset`, `sheng-vsync`, ...): read by the copied package,
-   the bring-up patch and the ShengUfs/GopFramebuffer components, so renaming them means patching those
-   components too (local forks or upstream options).
-3. Identifiers fixed by UniXNU: `XNU_SHENG_PMGR` / `sheng_pmgr_run` (patched again by UniXNU's
-   `zzz-boot-progress.patch`), `board.kit = "sheng"` (UniXNU scripts hard-code `kits/sheng`), component IDs
-   `ShengUfs`, `ShengHidInput`. These need UniXNU changes first (e.g. scripts taking `board.kit`).
+Kept on purpose: names that form an interface with code this port does not own. Renaming one side alone breaks it.
+
+| Names | Read or defined by | To rename |
+| --- | --- | --- |
+| Boot arguments `sheng-log`, `sheng-data-reset`, `sheng-os*`, `sheng-exc*`, `sheng-autoreset`, `sheng-setup`, `sheng-lite`, `sheng-disable-*` and more (`grep -rhoE '"sheng-[a-z0-9_-]+' patches package`); `sheng-vsync` | ShengUfs, GopFramebuffer, the bring-up patch and the copied package | add ishtar-* aliases in those components (upstream option), then switch |
+| Kernel symbols `sheng_idle_*`, `sheng_exc_*`, `sheng_sigp_*`, `sheng_prof_*`, `sheng_boot_*` and more (`grep -rhoE '\bsheng_[a-z]+_' patches package`) | defined by the bring-up and cpu-idle patches, read by the copied package and possibly by components | rename in patches and package together after a build proves no component references them |
+| `XNU_SHENG_PMGR`, `sheng_pmgr_run` | sm8550-common's platform-power patch, re-patched by UniXNU's `zzz-boot-progress.patch` | upstream change in UniXNU and sm8550-common |
+| Component IDs `ShengUfs`, `ShengHidInput`, class names `ShengBattery`, `ShengQrtr` | UniXNU catalog, sheng's package | upstream (catalog IDs are shared) |
+| `scripts/build-sheng-*.py`, `build/sheng-*` output directories | UniXNU build scripts | upstream |
+
+Do the kernel-symbol row once the kernel builds (a missed reference shows up as a link error); re-run
+`check-patch-series.py` and keep it at 75/75.
 
 ## 7. Report back
 
 For each task: command, full commit of this repo and of `UniXNU` `ishtar/ios27`, output path and sha256, result, and
 what was seen on the phone. Missing inputs and decisions for the user (key handling, flashing) go first.
+
+## 8. Repositories the user pushes
+
+The user pushes; agents commit locally and say what to push.
+
+| Local | Remote | Branch |
+| --- | --- | --- |
+| `UniXNU-ishtar` | `markakash/UniXnu-ishtar` | `main` |
+| `UniXNU` | `markakash/UniXNU` (fork of `UniXNU/UniXNU`) | `ishtar/ios27` |
+| `uefi-ishtar` | the user's fork of `UniXNU/uefi-sheng` | `ishtar` |
+| `Binaries` (uefi-ishtar submodule) | the user's fork of `Project-Silicium/Device-Binaries`, private | default branch, with `ishtar/` (T0) |
+
+Not pushed: `out/`, `ref/`, `local.toml`, `unixnu.local.toml`, `.cache/firmware/`, keys, IPSW members.

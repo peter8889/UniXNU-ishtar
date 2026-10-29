@@ -35,7 +35,7 @@ $PY scripts/porting-record.py check --device ../UniXNU-ishtar
 $PY ./unixnu build kernel -D ../UniXNU-ishtar        # needs Xcode iphoneos SDK
 $PY ./unixnu build firmware -D ../UniXNU-ishtar --uefi ../uefi-ishtar
 $PY ./unixnu build payload -D ../UniXNU-ishtar --unique-chip-id "$ID"   # needs dtc
-$PY ./unixnu bootimg -D ../UniXNU-ishtar --uefi ../uefi-ishtar --dtb <kalama-v2.dtb>
+$PY ./unixnu bootimg -D ../UniXNU-ishtar --uefi ../uefi-ishtar --dtb ../uefi-ishtar/Resources/DTBs/ishtar.dtb
 fastboot boot out/ishtar/ios-27.0.1-24A446/ishtar_ios27/boot/boot.img   # nothing is flashed
 ```
 
@@ -72,7 +72,7 @@ Running the payload's userdata step writes the iOS images into `userdata` and **
 | `dts/ishtar.dts` | memory, splash reservation, CPU clusters, enabled SoC blocks |
 | `configs/ishtar_ios27_defconfig` | stage 0 kernel configuration |
 | `patches/xnu-12377/` | device series (sheng) and `soc/` series (SM8550 for 12377) |
-| `package/` | board package (appears as `kits/sheng`, see board.toml) |
+| `package/` | board package (appears as `kits/ishtar`) |
 | `unixnu/` | UniXNU commit adding the iOS 27 profile |
 | `firmware/` | uefi-ishtar commit adding `ishtarPkg` on top of UniXNU's `uefi-sheng` |
 | `reports/` | host check outputs |

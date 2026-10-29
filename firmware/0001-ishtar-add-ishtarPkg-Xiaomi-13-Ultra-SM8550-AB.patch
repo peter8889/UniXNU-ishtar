@@ -1,0 +1,2297 @@
+From 4d28c9d273822d89bfc30868c7a71b6899594de8 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 16:11:57 +0100
+Subject: [PATCH] ishtar: add ishtarPkg (Xiaomi 13 Ultra, SM8550-AB)
+
+Board package for ishtar on uefi-sheng: platform DSC/FDF, includes,
+MemoryMapLib and ConfigurationMapLib derived from shengPkg, and ishtar's own
+board drivers (IshtarKeyInputDxe, IshtarBootMemoryDxe, IshtarGopLogDxe,
+IshtarDisplayDepexDxe; from sheng's, new FILE_GUIDs). ISHTAR_VENDOR_HW = 0:
+Mu drivers and SimpleFbDxe on the XBL-lit 1440x3200 panel. Vendor binaries
+come from Binaries/ishtar, extracted from ishtar's stock HyperOS uefi image.
+Second DRAM bank entries for the 12 GB layout. Boot image config from nuwa
+(header v1).
+---
+ Platforms/Xiaomi/ishtarPkg/DeviceBuild.py     | 206 ++++++++++++
+ .../IshtarBootMemoryDxe/IshtarBootMemoryDxe.c | 295 +++++++++++++++++
+ .../IshtarBootMemoryDxe.inf                   |  31 ++
+ .../IshtarDisplayDepexDxe.c                   |  53 ++++
+ .../IshtarDisplayDepexDxe.inf                 |  20 ++
+ .../Drivers/IshtarGopLogDxe/IshtarGopLogDxe.c | 176 +++++++++++
+ .../IshtarGopLogDxe/IshtarGopLogDxe.inf       |  29 ++
+ .../IshtarKeyInputDxe/IshtarKeyInputDxe.c     | 297 ++++++++++++++++++
+ .../IshtarKeyInputDxe/IshtarKeyInputDxe.inf   |  36 +++
+ .../IshtarKeyInputDxe/IshtarSpmiKeys.h        | 119 +++++++
+ .../IshtarKeyInputDxe/Test/keys_host.c        |  97 ++++++
+ .../Xiaomi/ishtarPkg/Include/APRIORI.inc      | 131 ++++++++
+ Platforms/Xiaomi/ishtarPkg/Include/DXE.inc    | 132 ++++++++
+ Platforms/Xiaomi/ishtarPkg/Include/RAW.inc    |  13 +
+ .../ConfigurationMapLib/ConfigurationMapLib.c |  56 ++++
+ .../ConfigurationMapLib.inf                   |  14 +
+ .../Library/MemoryMapLib/MemoryMapLib.c       | 101 ++++++
+ .../Library/MemoryMapLib/MemoryMapLib.inf     |  15 +
+ Platforms/Xiaomi/ishtarPkg/ishtar.dec         |   0
+ Platforms/Xiaomi/ishtarPkg/ishtar.dsc         | 122 +++++++
+ Platforms/Xiaomi/ishtarPkg/ishtar.fdf         | 137 ++++++++
+ Resources/Configs/ishtar.toml                 |  25 ++
+ 22 files changed, 2105 insertions(+)
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/DeviceBuild.py
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarSpmiKeys.h
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/Test/keys_host.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Include/APRIORI.inc
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Include/DXE.inc
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.inf
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/ishtar.dec
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/ishtar.dsc
+ create mode 100644 Platforms/Xiaomi/ishtarPkg/ishtar.fdf
+ create mode 100755 Resources/Configs/ishtar.toml
+
+diff --git a/Platforms/Xiaomi/ishtarPkg/DeviceBuild.py b/Platforms/Xiaomi/ishtarPkg/DeviceBuild.py
+new file mode 100644
+index 00000000..4293344a
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/DeviceBuild.py
+@@ -0,0 +1,206 @@
++##
++# Copyright (c) Microsoft Corporation.
++# SPDX-License-Identifier: BSD-2-Clause-Patent
++##
++
++import datetime
++import logging
++import os
++import uuid
++
++from io import StringIO
++from pathlib import Path
++
++from edk2toolext.environment import shell_environment
++from edk2toolext.environment.uefi_build import UefiBuilder
++from edk2toolext.invocables.edk2_platform_build import BuildSettingsManager
++from edk2toolext.invocables.edk2_pr_eval import PrEvalSettingsManager
++from edk2toolext.invocables.edk2_setup import (RequiredSubmodule, SetupSettingsManager)
++from edk2toolext.invocables.edk2_update import UpdateSettingsManager
++from edk2toolext.invocables.edk2_parse import ParseSettingsManager
++from edk2toollib.utility_functions import RunCmd
++
++# ####################################################################################### #
++#                                Common Configuration                                     #
++# ####################################################################################### #
++class CommonPlatform ():
++    PackagesSupported = ("ishtarPkg")
++    ArchSupported = ("AARCH64")
++    TargetsSupported = ("DEBUG", "RELEASE")
++    Scopes = ('ishtar', 'gcc_aarch64_linux', 'edk2-build')
++    WorkspaceRoot = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
++    PackagesPath = (
++        os.path.join(os.environ.get("UNIXNU_ROOT", os.path.join(WorkspaceRoot, "..", "UniXNU")), "package"),
++        "Platforms/Xiaomi",
++        "Common/Mu",
++        "Common/Mu_OEM_Sample",
++        "Mu_Basecore",
++        "Silicon/Qualcomm",
++        "Silicon/Silicium",
++        "Silicium-ACPI",
++        "Silicium-ACPI/Platforms/Xiaomi",
++        "Silicium-ACPI/Silicon/Qualcomm"
++    )
++
++# ####################################################################################### #
++#                         Configuration for Update & Setup                                #
++# ####################################################################################### #
++class SettingsManager (UpdateSettingsManager, SetupSettingsManager, PrEvalSettingsManager, ParseSettingsManager):
++
++    def GetPackagesSupported (self):
++        return CommonPlatform.PackagesSupported
++
++    def GetArchitecturesSupported (self):
++        return CommonPlatform.ArchSupported
++
++    def GetTargetsSupported (self):
++        return CommonPlatform.TargetsSupported
++
++    def GetRequiredSubmodules (self):
++        return [
++            RequiredSubmodule ("Binaries", True),
++            RequiredSubmodule ("Common/Mu", True),
++            RequiredSubmodule ("Common/Mu_OEM_Sample", True),
++            RequiredSubmodule ("Mu_Basecore", True),
++            RequiredSubmodule ("Silicium-ACPI", True),
++            RequiredSubmodule ("Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl", True)
++        ]
++
++    def SetArchitectures (self, list_of_requested_architectures):
++        unsupported = set(list_of_requested_architectures) - set(self.GetArchitecturesSupported())
++
++        if (len(unsupported) > 0):
++            errorString = ("Unsupported Architecture Requested: " + " ".join(unsupported))
++            logging.critical (errorString)
++            raise Exception (errorString)
++
++        self.ActualArchitectures = list_of_requested_architectures
++
++    def GetWorkspaceRoot (self):
++        return CommonPlatform.WorkspaceRoot
++
++    def GetActiveScopes (self):
++        return CommonPlatform.Scopes
++
++    def FilterPackagesToTest (self, changedFilesList: list, potentialPackagesList: list) -> list:
++        build_these_packages = []
++        possible_packages = potentialPackagesList.copy ()
++
++        for f in changedFilesList:
++            if "BaseTools" in f:
++                if os.path.splitext(f) not in [".txt", ".md"]:
++                    build_these_packages = possible_packages
++                    break
++
++            if "platform-build-run-steps.yml" in f:
++                build_these_packages = possible_packages
++                break
++
++        return build_these_packages
++
++    def GetPlatformDscAndConfig (self) -> tuple:
++        return ("ishtarPkg/ishtar.dsc", {})
++
++    def GetName (self):
++        return "ishtar"
++
++    def GetPackagesPath (self):
++        return CommonPlatform.PackagesPath
++
++# ####################################################################################### #
++#                         Actual Configuration for Platform Build                         #
++# ####################################################################################### #
++class PlatformBuilder (UefiBuilder, BuildSettingsManager):
++    def __init__ (self):
++        UefiBuilder.__init__ (self)
++
++    def AddCommandLineOptions (self, parserObj):
++        parserObj.add_argument('-a', "--arch", dest="build_arch", type=str, default="AARCH64", help="Optional - CSV of architecture to build. AARCH64 is used for PEI and DXE and is the only valid option for this platform.")
++
++    def RetrieveCommandLineOptions (self, args):
++        if args.build_arch.upper() != "AARCH64":
++            raise Exception("Invalid Arch Specified.  Please see comments in DeviceBuild.py::PlatformBuilder::AddCommandLineOptions")
++
++    def GetWorkspaceRoot (self):
++        return CommonPlatform.WorkspaceRoot
++
++    def GetPackagesPath (self):
++        result = [ shell_environment.GetBuildVars().GetValue("FEATURE_CONFIG_PATH", "") ]
++
++        for a in CommonPlatform.PackagesPath:
++            result.append(a)
++
++        return result
++
++    def GetActiveScopes (self):
++        return CommonPlatform.Scopes
++
++    def GetName (self):
++        return "ishtarPkg"
++
++    def GetLoggingLevel (self, loggerType):
++        return logging.INFO
++        return super().GetLoggingLevel(loggerType)
++
++    def SetPlatformEnv (self):
++        logging.debug ("PlatformBuilder SetPlatformEnv")
++
++        self.env.SetValue ("PRODUCT_NAME", "ishtar", "Platform Hardcoded")
++        self.env.SetValue ("ACTIVE_PLATFORM", "ishtarPkg/ishtar.dsc", "Platform Hardcoded")
++        self.env.SetValue ("TARGET_ARCH", "AARCH64", "Platform Hardcoded")
++        self.env.SetValue ("TOOL_CHAIN_TAG", "CLANGPDB", "set default to clangpdb")
++        self.env.SetValue ("EMPTY_DRIVE", "FALSE", "Default to false")
++        self.env.SetValue ("RUN_TESTS", "FALSE", "Default to false")
++        self.env.SetValue ("SHUTDOWN_AFTER_RUN", "FALSE", "Default to false")
++        self.env.SetValue ("BLD_*_BUILDID_STRING", "Unknown", "Default")
++        self.env.SetValue ("BUILDREPORTING", "TRUE", "Enabling build report")
++        self.env.SetValue ("BUILDREPORT_TYPES", "PCD DEPEX FLASH BUILD_FLAGS LIBRARY FIXED_ADDRESS HASH", "Setting build report types")
++        self.env.SetValue ("BLD_*_MEMORY_PROTECTION", "TRUE", "Default")
++        self.env.SetValue ("BLD_*_SHIP_MODE", "FALSE", "Default")
++        self.env.SetValue ("BLD_*_ENABLE_SECUREBOOT", self.env.GetValue("ENABLE_SECUREBOOT"), "Default")
++        self.env.SetValue ("BLD_*_DEVICE_MODEL", self.env.GetValue("DEVICE_MODEL"), "Default")
++        self.env.SetValue ("BLD_*_FD_BASE", self.env.GetValue("FD_BASE"), "Default")
++        self.env.SetValue ("BLD_*_FD_SIZE", self.env.GetValue("FD_SIZE"), "Default")
++        self.env.SetValue ("BLD_*_FD_BLOCKS", self.env.GetValue("FD_BLOCKS"), "Default")
++
++        return 0
++
++    def PlatformPreBuild (self):
++        return 0
++
++    def PlatformPostBuild (self):
++        return 0
++
++    def FlashRomImage (self):
++        return 0
++
++if __name__ == "__main__":
++    import argparse
++    import sys
++
++    from edk2toolext.invocables.edk2_platform_build import Edk2PlatformBuild
++    from edk2toolext.invocables.edk2_setup import Edk2PlatformSetup
++    from edk2toolext.invocables.edk2_update import Edk2Update
++
++    SCRIPT_PATH = os.path.relpath (__file__)
++
++    parser = argparse.ArgumentParser (add_help=False)
++
++    parse_group = parser.add_mutually_exclusive_group()
++
++    parse_group.add_argument ("--update", "--UPDATE", action='store_true', help="Invokes stuart_update")
++    parse_group.add_argument ("--setup",  "--SETUP",  action='store_true', help="Invokes stuart_setup")
++
++    args, remaining = parser.parse_known_args()
++
++    new_args = ["stuart", "-c", SCRIPT_PATH]
++    new_args = new_args + remaining
++
++    sys.argv = new_args
++
++    if args.setup:
++        Edk2PlatformSetup().Invoke()
++    elif args.update:
++        Edk2Update().Invoke()
++    else:
++        Edk2PlatformBuild().Invoke()
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.c b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.c
+new file mode 100644
+index 00000000..5de93b88
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.c
+@@ -0,0 +1,295 @@
++/** @file
++  Add available DRAM from the firmware FDT to the GCD memory map.
++
++  Memory additions use ishtar's mapping limits and exclude reserved ranges.
++**/
++
++#include <Uefi.h>
++#include <Library/BaseLib.h>
++#include <Library/BaseMemoryLib.h>
++#include <Library/DebugLib.h>
++#include <Library/DxeServicesTableLib.h>
++#include <Library/FdtLib.h>
++#include <Library/HobLib.h>
++#include <Library/MemoryAllocationLib.h>
++
++#define MAX_RANGES        64
++#define MIN_PIECE_SIZE    SIZE_16MB
++#define ADD_LIMIT         SIZE_1GB
++#define ADD_BELOW         SIZE_4GB     // stay inside what the MMU setup maps
++
++typedef struct {
++  UINT64  Base;
++  UINT64  End;       // exclusive
++} RANGE;
++
++STATIC
++UINT64
++ReadCells (
++  IN CONST VOID  *Data,
++  IN UINT32      Cells
++  )
++{
++  if (Cells == 2) {
++    return Fdt64ToCpu (ReadUnaligned64 (Data));
++  }
++
++  return Fdt32ToCpu (ReadUnaligned32 (Data));
++}
++
++STATIC
++UINT32
++GetCells (
++  IN CONST VOID  *Fdt,
++  IN INT32       Node,
++  IN CONST CHAR8 *Name,
++  IN UINT32      Default
++  )
++{
++  CONST VOID  *Prop;
++  INT32       Length;
++
++  Prop = FdtGetProp (Fdt, Node, Name, &Length);
++  if ((Prop == NULL) || (Length != sizeof (UINT32))) {
++    return Default;
++  }
++
++  return Fdt32ToCpu (ReadUnaligned32 (Prop));
++}
++
++STATIC
++UINTN
++CollectReg (
++  IN     CONST VOID  *Fdt,
++  IN     INT32       Node,
++  IN     UINT32      AddressCells,
++  IN     UINT32      SizeCells,
++  IN OUT RANGE       *Ranges,
++  IN     UINTN       Count
++  )
++{
++  CONST UINT8  *Reg;
++  INT32        Length;
++  UINT32       Entry;
++  INT32        Offset;
++  UINT64       Base;
++  UINT64       Size;
++
++  Reg = FdtGetProp (Fdt, Node, "reg", &Length);
++  if (Reg == NULL) {
++    return Count;
++  }
++
++  Entry = (AddressCells + SizeCells) * sizeof (UINT32);
++  for (Offset = 0; (Offset + (INT32)Entry <= Length) && (Count < MAX_RANGES); Offset += Entry) {
++    Base = ReadCells (Reg + Offset, AddressCells);
++    Size = ReadCells (Reg + Offset + AddressCells * sizeof (UINT32), SizeCells);
++    if ((Size != 0) && (Base + Size > Base)) {
++      Ranges[Count].Base = Base;
++      Ranges[Count].End  = Base + Size;
++      Count++;
++    }
++  }
++
++  return Count;
++}
++
++/**
++  Remove every part of Pieces[] that lies inside Cut.
++**/
++STATIC
++UINTN
++Subtract (
++  IN OUT RANGE  *Pieces,
++  IN     UINTN  Count,
++  IN     RANGE  Cut
++  )
++{
++  UINTN  Index;
++  UINTN  Result;
++  RANGE  Out[MAX_RANGES];
++
++  Result = 0;
++  for (Index = 0; Index < Count; Index++) {
++    if ((Cut.End <= Pieces[Index].Base) || (Cut.Base >= Pieces[Index].End)) {
++      if (Result < MAX_RANGES) {
++        Out[Result++] = Pieces[Index];
++      }
++
++      continue;
++    }
++
++    if ((Cut.Base > Pieces[Index].Base) && (Result < MAX_RANGES)) {
++      Out[Result].Base  = Pieces[Index].Base;
++      Out[Result].End   = Cut.Base;
++      Result++;
++    }
++
++    if ((Cut.End < Pieces[Index].End) && (Result < MAX_RANGES)) {
++      Out[Result].Base  = Cut.End;
++      Out[Result].End   = Pieces[Index].End;
++      Result++;
++    }
++  }
++
++  CopyMem (Pieces, Out, Result * sizeof (RANGE));
++  return Result;
++}
++
++STATIC
++VOID
++AddMemory (
++  IN CONST VOID  *Fdt
++  )
++{
++  EFI_STATUS                       Status;
++  EFI_GCD_MEMORY_SPACE_DESCRIPTOR  *Map;
++  UINTN                            MapCount;
++  INT32                            Root;
++  INT32                            Node;
++  INT32                            Reserved;
++  INT32                            Length;
++  CONST CHAR8                      *Type;
++  UINT32                           AddressCells;
++  UINT32                           SizeCells;
++  RANGE                            Banks[MAX_RANGES];
++  RANGE                            Holes[MAX_RANGES];
++  RANGE                            Pieces[MAX_RANGES];
++  UINTN                            BankCount;
++  UINTN                            HoleCount;
++  UINTN                            PieceCount;
++  UINTN                            ReservedCount;
++  RANGE                            ReservedRanges[MAX_RANGES];
++  UINTN                            Index;
++  UINTN                            Other;
++  UINT64                           Added;
++  UINT64                           Base;
++  UINT64                           End;
++
++  Root         = FdtPathOffset (Fdt, "/");
++  AddressCells = GetCells (Fdt, Root, "#address-cells", 2);
++  SizeCells    = GetCells (Fdt, Root, "#size-cells", 2);
++
++  BankCount = 0;
++  for (Node = FdtFirstSubnode (Fdt, Root); Node >= 0; Node = FdtNextSubnode (Fdt, Node)) {
++    Type = FdtGetProp (Fdt, Node, "device_type", &Length);
++    if ((Type != NULL) && (AsciiStrCmp (Type, "memory") == 0)) {
++      BankCount = CollectReg (Fdt, Node, AddressCells, SizeCells, Banks, BankCount);
++    }
++  }
++
++  ReservedCount = 0;
++  Reserved      = FdtPathOffset (Fdt, "/reserved-memory");
++  if (Reserved >= 0) {
++    UINT32  ResAddress = GetCells (Fdt, Reserved, "#address-cells", AddressCells);
++    UINT32  ResSize    = GetCells (Fdt, Reserved, "#size-cells", SizeCells);
++
++    for (Node = FdtFirstSubnode (Fdt, Reserved); Node >= 0; Node = FdtNextSubnode (Fdt, Node)) {
++      ReservedCount = CollectReg (Fdt, Node, ResAddress, ResSize, ReservedRanges, ReservedCount);
++    }
++  }
++
++  DEBUG ((DEBUG_ERROR, "ISHTARMEM: DT has %u memory ranges and %u reserved ranges\n", (UINT32)BankCount, (UINT32)ReservedCount));
++  if (BankCount == 0) {
++    return;
++  }
++
++  Status = gDS->GetMemorySpaceMap (&MapCount, &Map);
++  if (EFI_ERROR (Status)) {
++    return;
++  }
++
++  //
++  // Holes: DRAM the GCD does not know yet.
++  //
++  HoleCount = 0;
++  for (Index = 0; Index < BankCount; Index++) {
++    for (Other = 0; Other < MapCount; Other++) {
++      if (Map[Other].GcdMemoryType != EfiGcdMemoryTypeNonExistent) {
++        continue;
++      }
++
++      Base = MAX (Banks[Index].Base, Map[Other].BaseAddress);
++      End  = MIN (Banks[Index].End, Map[Other].BaseAddress + Map[Other].Length);
++      if ((Base < End) && (HoleCount < MAX_RANGES)) {
++        Holes[HoleCount].Base = Base;
++        Holes[HoleCount].End  = End;
++        HoleCount++;
++      }
++    }
++  }
++
++  FreePool (Map);
++
++  //
++  // Minus everything the DT reserves; what is left is added right away.
++  //
++  Added = 0;
++  for (Index = 0; (Index < HoleCount) && (Added < ADD_LIMIT); Index++) {
++    Pieces[0]  = Holes[Index];
++    PieceCount = 1;
++    for (Other = 0; Other < ReservedCount; Other++) {
++      PieceCount = Subtract (Pieces, PieceCount, ReservedRanges[Other]);
++    }
++
++    for (Other = 0; (Other < PieceCount) && (Added < ADD_LIMIT); Other++) {
++      Base = ALIGN_VALUE (Pieces[Other].Base, SIZE_2MB);
++      End  = Pieces[Other].End & ~((UINT64)SIZE_2MB - 1);
++      if ((End <= Base) || (End - Base < MIN_PIECE_SIZE) || (End > ADD_BELOW)) {
++        continue;
++      }
++
++      End = MIN (End, Base + (ADD_LIMIT - Added));
++
++      //
++      // Add and map before anything can allocate from it.
++      //
++      Status = gDS->AddMemorySpace (
++                      EfiGcdMemoryTypeSystemMemory,
++                      Base,
++                      End - Base,
++                      EFI_MEMORY_UC | EFI_MEMORY_WC | EFI_MEMORY_WT | EFI_MEMORY_WB
++                      );
++      if (!EFI_ERROR (Status)) {
++        Status = gDS->SetMemorySpaceAttributes (Base, End - Base, EFI_MEMORY_WB);
++        if (EFI_ERROR (Status)) {
++          gDS->RemoveMemorySpace (Base, End - Base);
++        } else {
++          Added += End - Base;
++        }
++      }
++
++      DEBUG ((DEBUG_ERROR, "ISHTARMEM: system memory 0x%lx-0x%lx %r\n", Base, End - 1, Status));
++    }
++  }
++
++  DEBUG ((DEBUG_ERROR, "ISHTARMEM: added 0x%lx bytes of system memory\n", Added));
++}
++
++EFI_STATUS
++EFIAPI
++IshtarBootMemoryDxeEntry (
++  IN EFI_HANDLE        ImageHandle,
++  IN EFI_SYSTEM_TABLE  *SystemTable
++  )
++{
++  EFI_HOB_GUID_TYPE  *Hob;
++  UINT64             Dtb;
++
++  Hob = GetFirstGuidHob (&gSiliciumEntryArgHobGuid);
++  if (Hob == NULL) {
++    DEBUG ((DEBUG_ERROR, "ISHTARMEM: no entry argument HOB\n"));
++    return EFI_SUCCESS;
++  }
++
++  Dtb = *(UINT64 *)GET_GUID_HOB_DATA (Hob);
++  if ((Dtb == 0) || ((Dtb & 3) != 0) || (FdtCheckHeader ((VOID *)(UINTN)Dtb) != 0)) {
++    DEBUG ((DEBUG_ERROR, "ISHTARMEM: x0 0x%lx is not a device tree\n", Dtb));
++    return EFI_SUCCESS;
++  }
++
++  DEBUG ((DEBUG_ERROR, "ISHTARMEM: device tree at 0x%lx, %u bytes\n", Dtb, (UINT32)FdtTotalSize ((VOID *)(UINTN)Dtb)));
++
++  AddMemory ((VOID *)(UINTN)Dtb);
++  return EFI_SUCCESS;
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf
+new file mode 100644
+index 00000000..5319d02c
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf
+@@ -0,0 +1,31 @@
++[Defines]
++  INF_VERSION                    = 0x0001001B
++  BASE_NAME                      = IshtarBootMemoryDxe
++  FILE_GUID                      = A9F247A4-4FCE-4F4C-819E-34407A7DF6B2
++  MODULE_TYPE                    = DXE_DRIVER
++  VERSION_STRING                 = 1.0
++  ENTRY_POINT                    = IshtarBootMemoryDxeEntry
++
++[Sources]
++  IshtarBootMemoryDxe.c
++
++[Packages]
++  MdePkg/MdePkg.dec
++  MdeModulePkg/MdeModulePkg.dec
++  SiliciumPkg/SiliciumPkg.dec
++
++[LibraryClasses]
++  BaseLib
++  BaseMemoryLib
++  DebugLib
++  DxeServicesTableLib
++  FdtLib
++  HobLib
++  MemoryAllocationLib
++  UefiDriverEntryPoint
++
++[Guids]
++  gSiliciumEntryArgHobGuid                      ## CONSUMES
++
++[Depex]
++  TRUE
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.c b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.c
+new file mode 100644
+index 00000000..a04e7a5b
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.c
+@@ -0,0 +1,53 @@
++/** @file
++  ishtar board glue for the stock DisplayDxe dependency expression.
++
++  The unchanged stock ishtar DisplayDxe DEPEX requires nine protocol GUIDs.
++  Seven are installed by the stock vendor drivers already packaged in this
++  firmware. The remaining two GUIDs appear nowhere else in the stock
++  ishtar image and are not referenced by any code inside DisplayDxe itself;
++  they are vestigial dependencies of the stock build's dispatcher
++  environment. This board driver installs empty flag protocols for them so
++  the genuine EDK2 dispatcher can satisfy the original, unmodified DEPEX.
++  No vendor byte is changed and no display state is touched here.
++**/
++
++#include <Library/UefiBootServicesTableLib.h>
++#include <Uefi.h>
++
++//
++// A966CC4F-EE6C-424D-A762-8ED3B5A4A501
++// Orphan GUID pushed by the stock DisplayDxe DEPEX.
++//
++STATIC CONST EFI_GUID mIshtarDisplayDepexProtocol1Guid = {
++  0xA966CC4F, 0xEE6C, 0x424D, { 0xA7, 0x62, 0x8E, 0xD3, 0xB5, 0xA4, 0xA5, 0x01 }
++};
++
++//
++// 47861DFF-556F-4269-9B28-062EC3ECB30D
++// Orphan GUID pushed by the stock DisplayDxe DEPEX.
++//
++STATIC CONST EFI_GUID mIshtarDisplayDepexProtocol2Guid = {
++  0x47861DFF, 0x556F, 0x4269, { 0x9B, 0x28, 0x06, 0x2E, 0xC3, 0xEC, 0xB3, 0x0D }
++};
++
++EFI_STATUS
++EFIAPI
++IshtarDisplayDepexDxeEntry (
++  IN EFI_HANDLE        ImageHandle,
++  IN EFI_SYSTEM_TABLE  *SystemTable
++  )
++{
++  EFI_HANDLE  Handle;
++
++  Handle = NULL;
++  gBS->InstallMultipleProtocolInterfaces (
++         &Handle,
++         &mIshtarDisplayDepexProtocol1Guid,
++         NULL,
++         &mIshtarDisplayDepexProtocol2Guid,
++         NULL,
++         NULL
++         );
++
++  return EFI_SUCCESS;
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
+new file mode 100644
+index 00000000..c84f08be
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
+@@ -0,0 +1,20 @@
++[Defines]
++  INF_VERSION                    = 0x0001001B
++  BASE_NAME                      = IshtarDisplayDepexDxe
++  FILE_GUID                      = 95C981E6-F022-4B7B-838B-ADB56568FE25
++  MODULE_TYPE                    = DXE_DRIVER
++  VERSION_STRING                 = 1.0
++  ENTRY_POINT                    = IshtarDisplayDepexDxeEntry
++
++[Sources]
++  IshtarDisplayDepexDxe.c
++
++[Packages]
++  MdePkg/MdePkg.dec
++
++[Depex]
++  TRUE
++
++[LibraryClasses]
++  UefiBootServicesTableLib
++  UefiDriverEntryPoint
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.c b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.c
+new file mode 100644
+index 00000000..730c15d4
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.c
+@@ -0,0 +1,176 @@
++/** @file
++  Hands the real scan-out frame buffer to the early frame buffer log.
++
++  The DEBUG log draws into the "Display Reserved" region with build-time
++  geometry. The stock DisplayDxe reprograms the panel and publishes its own
++  graphics output protocol, after which the log no longer reaches the screen.
++  This driver waits for that protocol and records its frame buffer base,
++  size and pitch where FrameBufferSerialPortLib looks for it. It changes no
++  display state and draws nothing itself.
++**/
++
++#include <Library/BaseLib.h>
++#include <Library/BaseMemoryLib.h>
++#include <Library/DebugLib.h>
++#include <Library/FrameBufferHandoff.h>
++#include <Library/MemoryMapHelperLib.h>
++#include <Library/UefiBootServicesTableLib.h>
++#include <Library/UefiLib.h>
++#include <Protocol/GraphicsOutput.h>
++#include <Uefi.h>
++
++STATIC VOID  *mRegistration;
++
++STATIC
++VOID
++PaintBltMarker (
++  IN EFI_GRAPHICS_OUTPUT_PROTOCOL  *Gop
++  )
++{
++  EFI_GRAPHICS_OUTPUT_BLT_PIXEL  White;
++  EFI_STATUS                     Status;
++
++  White.Blue     = 0xFF;
++  White.Green    = 0xFF;
++  White.Red      = 0xFF;
++  White.Reserved = 0x00;
++
++  Status = Gop->Blt (
++                  Gop,
++                  &White,
++                  EfiBltVideoFill,
++                  0,
++                  0,
++                  0,
++                  0,
++                  Gop->Mode->Info->HorizontalResolution,
++                  Gop->Mode->Info->VerticalResolution / 4,
++                  0
++                  );
++  DEBUG ((DEBUG_ERROR, "GOP: Blt fill marker %r\n", Status));
++}
++
++STATIC
++VOID
++PaintLinearMarker (
++  IN volatile FB_HANDOFF  *Handoff
++  )
++{
++  UINT32  Row;
++  UINT32  Column;
++  UINT8   *RowBase;
++
++  for (Row = Handoff->Height / 4; Row < Handoff->Height / 2; Row++) {
++    RowBase = (UINT8 *)(UINTN)(Handoff->Base + (UINTN)Row * Handoff->PitchBytes);
++    for (Column = 0; Column < Handoff->Width; Column++) {
++      *(volatile UINT32 *)(RowBase + (UINTN)Column * 4) = 0xFFFFFFFF;
++    }
++  }
++}
++
++STATIC
++VOID
++PublishGop (VOID)
++{
++  EFI_STATUS                    Status;
++  EFI_GRAPHICS_OUTPUT_PROTOCOL  *Gop;
++  EFI_MEMORY_REGION_DESCRIPTOR  Region;
++  volatile FB_HANDOFF           *Handoff;
++  UINT32                        BytesPerPixel;
++
++  Status = gBS->LocateProtocol (&gEfiGraphicsOutputProtocolGuid, NULL, (VOID **)&Gop);
++  if (EFI_ERROR (Status) || (Gop->Mode == NULL) || (Gop->Mode->Info == NULL)) {
++    return;
++  }
++
++  DEBUG ((
++    DEBUG_ERROR,
++    "GOP: base 0x%lx size 0x%lx %ux%u pixels/line %u format %d\n",
++    Gop->Mode->FrameBufferBase,
++    (UINT64)Gop->Mode->FrameBufferSize,
++    Gop->Mode->Info->HorizontalResolution,
++    Gop->Mode->Info->VerticalResolution,
++    Gop->Mode->Info->PixelsPerScanLine,
++    (INT32)Gop->Mode->Info->PixelFormat
++    ));
++
++  //
++  // Marker for hardware bring-up, independent of any text: the top quarter
++  // of the screen is filled white through the protocol itself.
++  //
++  PaintBltMarker (Gop);
++
++  //
++  // A Blt-only mode has no linear frame buffer to draw into, and only
++  // 32-bit linear formats match the glyph drawing of the log.
++  //
++  if ((Gop->Mode->FrameBufferBase == 0) ||
++      ((Gop->Mode->Info->PixelFormat != PixelRedGreenBlueReserved8BitPerColor) &&
++       (Gop->Mode->Info->PixelFormat != PixelBlueGreenRedReserved8BitPerColor)))
++  {
++    DEBUG ((DEBUG_ERROR, "GOP: no 32-bit linear frame buffer, log stays on its default\n"));
++    return;
++  }
++
++  ZeroMem (&Region, sizeof (Region));
++  LocateMemoryRegionByName ("Display Reserved", &Region);
++  LocateMemoryRegionByName ("Display_Reserved", &Region);
++  if ((Region.Address == 0) || (Region.Length < FB_HANDOFF_OFFSET)) {
++    return;
++  }
++
++  BytesPerPixel = 4;
++  Handoff       = (volatile FB_HANDOFF *)(UINTN)(Region.Address + Region.Length - FB_HANDOFF_OFFSET);
++
++  Handoff->Base       = Gop->Mode->FrameBufferBase;
++  Handoff->Width      = Gop->Mode->Info->HorizontalResolution;
++  Handoff->Height     = Gop->Mode->Info->VerticalResolution;
++  Handoff->PitchBytes = Gop->Mode->Info->PixelsPerScanLine * BytesPerPixel;
++  MemoryFence ();
++  Handoff->Magic = FB_HANDOFF_MAGIC;
++  MemoryFence ();
++
++  //
++  // Second marker through the reported linear frame buffer: the second
++  // quarter of the screen. Seeing it proves base, pitch and format.
++  //
++  PaintLinearMarker (Handoff);
++
++  DEBUG ((DEBUG_ERROR, "GOP: log now follows the graphics output frame buffer\n"));
++}
++
++STATIC
++VOID
++EFIAPI
++GopNotify (
++  IN EFI_EVENT  Event,
++  IN VOID       *Context
++  )
++{
++  PublishGop ();
++}
++
++EFI_STATUS
++EFIAPI
++IshtarGopLogDxeEntry (
++  IN EFI_HANDLE        ImageHandle,
++  IN EFI_SYSTEM_TABLE  *SystemTable
++  )
++{
++  EFI_EVENT  Event;
++
++  Event = EfiCreateProtocolNotifyEvent (
++            &gEfiGraphicsOutputProtocolGuid,
++            TPL_CALLBACK,
++            GopNotify,
++            NULL,
++            &mRegistration
++            );
++  if (Event == NULL) {
++    return EFI_SUCCESS;
++  }
++
++  // The protocol may already exist.
++  PublishGop ();
++  return EFI_SUCCESS;
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
+new file mode 100644
+index 00000000..5d48cad1
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
+@@ -0,0 +1,29 @@
++[Defines]
++  INF_VERSION                    = 0x0001001B
++  BASE_NAME                      = IshtarGopLogDxe
++  FILE_GUID                      = 624776A1-8E95-42AF-9858-E05A00419223
++  MODULE_TYPE                    = DXE_DRIVER
++  VERSION_STRING                 = 1.0
++  ENTRY_POINT                    = IshtarGopLogDxeEntry
++
++[Sources]
++  IshtarGopLogDxe.c
++
++[Packages]
++  MdePkg/MdePkg.dec
++  SiliciumPkg/SiliciumPkg.dec
++
++[Depex]
++  TRUE
++
++[LibraryClasses]
++  BaseLib
++  BaseMemoryLib
++  DebugLib
++  MemoryMapHelperLib
++  UefiBootServicesTableLib
++  UefiDriverEntryPoint
++  UefiLib
++
++[Protocols]
++  gEfiGraphicsOutputProtocolGuid                ## CONSUMES
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.c b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.c
+new file mode 100644
+index 00000000..c51827da
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.c
+@@ -0,0 +1,297 @@
++/** @file
++  The tablet's power and volume keys as a SimpleTextIn device.
++
++  The boot manager navigates with ordinary console keys. This driver reads the three hardware keys through the SPMI PMIC arbiter
++  (IshtarSpmiKeys.h has the register facts) and presents them as keys: volume up = Up, volume down = Down, power = Enter. It only
++  reads; polling stops when boot services end, so nothing is left running for the kernel, which uses the same arbiter later.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#include <Uefi.h>
++#include <Library/BaseLib.h>
++#include <Library/BaseMemoryLib.h>
++#include <Library/DebugLib.h>
++#include <Library/MemoryAllocationLib.h>
++#include <Library/UefiBootServicesTableLib.h>
++#include <Library/UefiRuntimeServicesTableLib.h>
++#include <Library/DevicePathLib.h>
++#include <Library/UefiLib.h>
++#include <Protocol/DevicePath.h>
++#include <Protocol/SimpleTextIn.h>
++#include <Guid/EventGroup.h>
++#include <Guid/GlobalVariable.h>
++
++#include "IshtarSpmiKeys.h"
++
++#define POLL_MS         20
++#define REPEAT_DELAY    25     // polls (500 ms) before a held volume key repeats
++#define REPEAT_PERIOD   7      // polls (140 ms) between repeats
++#define QUEUE_SIZE      16
++#define MAX_FAILURES    50     // consecutive failed samples before polling stops
++
++#define SPMI_CORE_BASE    0x0C400000UL
++#define SPMI_OBSRVR_BASE  0x0C440000UL
++
++typedef struct {
++  VENDOR_DEVICE_PATH          Vendor;
++  EFI_DEVICE_PATH_PROTOCOL    End;
++} ISHTAR_KEY_DEVICE_PATH;
++
++STATIC ISHTAR_KEY_DEVICE_PATH  mPath = {
++  {
++    { HARDWARE_DEVICE_PATH, HW_VENDOR_DP, { sizeof (VENDOR_DEVICE_PATH), 0 } },
++    { 0x74921D8A, 0x54BD, 0x4855, { 0x94, 0xD4, 0x16, 0xC6, 0x9C, 0xC9, 0xCB, 0x7F } }
++  },
++  { END_DEVICE_PATH_TYPE, END_ENTIRE_DEVICE_PATH_SUBTYPE, { sizeof (EFI_DEVICE_PATH_PROTOCOL), 0 } }
++};
++
++STATIC struct sk_arbiter  mArbiter;
++STATIC struct sk_keys     mKeys;
++STATIC struct sk_filter   mFilter;
++STATIC EFI_INPUT_KEY      mQueue[QUEUE_SIZE];
++STATIC UINTN              mHead, mCount;
++STATIC UINTN              mFailures;
++STATIC EFI_EVENT          mTimer, mExit;
++STATIC EFI_HANDLE         mHandle;
++
++STATIC
++EFI_STATUS
++EFIAPI
++KeyReset (
++  IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *This,
++  IN BOOLEAN                         ExtendedVerification
++  )
++{
++  EFI_TPL  Tpl = gBS->RaiseTPL (TPL_NOTIFY);
++
++  mHead  = 0;
++  mCount = 0;
++  gBS->RestoreTPL (Tpl);
++  return EFI_SUCCESS;
++}
++
++STATIC
++EFI_STATUS
++EFIAPI
++KeyRead (
++  IN  EFI_SIMPLE_TEXT_INPUT_PROTOCOL  *This,
++  OUT EFI_INPUT_KEY                   *Key
++  )
++{
++  EFI_TPL  Tpl = gBS->RaiseTPL (TPL_NOTIFY);
++
++  if (mCount == 0) {
++    gBS->RestoreTPL (Tpl);
++    return EFI_NOT_READY;
++  }
++
++  *Key  = mQueue[mHead];
++  mHead = (mHead + 1) % QUEUE_SIZE;
++  mCount--;
++  gBS->RestoreTPL (Tpl);
++  return EFI_SUCCESS;
++}
++
++STATIC EFI_SIMPLE_TEXT_INPUT_PROTOCOL  mInput = { KeyReset, KeyRead, NULL };
++
++// WaitForKey is checked by WaitForEvent/CheckEvent: it must be signaled again while keys remain queued.
++STATIC
++VOID
++EFIAPI
++KeyWait (
++  IN EFI_EVENT  Event,
++  IN VOID       *Context
++  )
++{
++  if (mCount != 0) {
++    gBS->SignalEvent (Event);
++  }
++}
++
++STATIC
++VOID
++Push (
++  IN UINT16  Scan,
++  IN CHAR16  Unicode
++  )
++{
++  if (mCount == QUEUE_SIZE) {
++    return;
++  }
++
++  mQueue[(mHead + mCount) % QUEUE_SIZE].ScanCode    = Scan;
++  mQueue[(mHead + mCount) % QUEUE_SIZE].UnicodeChar = Unicode;
++  mCount++;
++  gBS->SignalEvent (mInput.WaitForKey);
++}
++
++STATIC
++VOID
++EFIAPI
++Poll (
++  IN EFI_EVENT  Event,
++  IN VOID       *Context
++  )
++{
++  UINT8  Pressed;
++  UINT8  Out;
++
++  if (sk_sample (&mArbiter, &mKeys, &Pressed) != 0) {
++    if (++mFailures >= MAX_FAILURES) {
++      gBS->SetTimer (mTimer, TimerCancel, 0);
++      DEBUG ((DEBUG_ERROR, "IshtarKeyInput: too many failed samples, polling stopped\n"));
++    }
++
++    return;
++  }
++
++  mFailures = 0;
++  Out       = sk_step (&mFilter, Pressed, REPEAT_DELAY, REPEAT_PERIOD);
++  if (Out & SK_KEY_VOLUP) {
++    Push (SCAN_UP, 0);
++  }
++
++  if (Out & SK_KEY_VOLDOWN) {
++    Push (SCAN_DOWN, 0);
++  }
++
++  if (Out & SK_KEY_POWER) {
++    Push (SCAN_NULL, CHAR_CARRIAGE_RETURN);
++  }
++}
++
++STATIC
++VOID
++EFIAPI
++OnExitBootServices (
++  IN EFI_EVENT  Event,
++  IN VOID       *Context
++  )
++{
++  gBS->SetTimer (mTimer, TimerCancel, 0);
++}
++
++// The console stack only splits the input devices named in the ConIn variable (ConPlatformDxe), so this device has to be listed there
++// or the boot manager never sees its keys. The variable is volatile when it did not exist before; an existing one keeps its attributes.
++STATIC
++EFI_STATUS
++AddToConIn (
++  VOID
++  )
++{
++  EFI_STATUS  Status;
++  UINTN       OldSize, OurSize, NewSize;
++  UINT32      Attributes;
++  UINT8       *Old, *New;
++
++  OurSize = GetDevicePathSize ((EFI_DEVICE_PATH_PROTOCOL *)&mPath);
++  OldSize = 0;
++  Status  = gRT->GetVariable (EFI_CON_IN_VARIABLE_NAME, &gEfiGlobalVariableGuid, &Attributes, &OldSize, NULL);
++  if (Status == EFI_NOT_FOUND) {
++    return gRT->SetVariable (EFI_CON_IN_VARIABLE_NAME, &gEfiGlobalVariableGuid, EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS, OurSize, &mPath);
++  }
++
++  if (Status != EFI_BUFFER_TOO_SMALL) {
++    return Status;
++  }
++
++  Old = AllocatePool (OldSize + OurSize);
++  if (Old == NULL) {
++    return EFI_OUT_OF_RESOURCES;
++  }
++
++  Status = gRT->GetVariable (EFI_CON_IN_VARIABLE_NAME, &gEfiGlobalVariableGuid, &Attributes, &OldSize, Old);
++  if (!EFI_ERROR (Status)) {
++    EFI_DEVICE_PATH_PROTOCOL  *Instance;
++    UINTN                     Offset;
++
++    //
++    // Already listed? Walk the instances.
++    //
++    for (Offset = 0; Offset < OldSize;) {
++      Instance = (EFI_DEVICE_PATH_PROTOCOL *)(Old + Offset);
++      if (CompareMem (Instance, &mPath, sizeof (VENDOR_DEVICE_PATH)) == 0) {
++        FreePool (Old);
++        return EFI_SUCCESS;
++      }
++
++      Offset += GetDevicePathSize (Instance);
++      if (Offset >= OldSize) {
++        break;
++      }
++    }
++
++    //
++    // Append: drop the old list's end node, then our node and end.
++    //
++    New     = Old;
++    NewSize = OldSize - sizeof (EFI_DEVICE_PATH_PROTOCOL);
++    CopyMem (New + NewSize, &mPath, OurSize);
++    NewSize += OurSize;
++    Status   = gRT->SetVariable (EFI_CON_IN_VARIABLE_NAME, &gEfiGlobalVariableGuid, Attributes, NewSize, New);
++  }
++
++  FreePool (Old);
++  return Status;
++}
++
++EFI_STATUS
++EFIAPI
++IshtarKeyInputDxeEntry (
++  IN EFI_HANDLE        ImageHandle,
++  IN EFI_SYSTEM_TABLE  *SystemTable
++  )
++{
++  EFI_STATUS  Status;
++  int         Rc;
++
++  mArbiter.core = (volatile UINT32 *)SPMI_CORE_BASE;
++  mArbiter.obs  = (volatile UINT32 *)SPMI_OBSRVR_BASE;
++  mArbiter.ee   = 0;
++
++  Rc = sk_open (&mArbiter, &mKeys);
++  if (Rc != 0) {
++    DEBUG ((DEBUG_ERROR, "IshtarKeyInput: arbiter lookup failed (%d), no keys\n", Rc));
++    return EFI_UNSUPPORTED;
++  }
++
++  DEBUG ((DEBUG_INFO, "IshtarKeyInput: PON apid %d, volume up apid %d\n", mKeys.pon, mKeys.gpio));
++
++  Status = gBS->CreateEvent (EVT_NOTIFY_WAIT, TPL_NOTIFY, KeyWait, NULL, &mInput.WaitForKey);
++  if (EFI_ERROR (Status)) {
++    return Status;
++  }
++
++  Status = gBS->CreateEvent (EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_CALLBACK, Poll, NULL, &mTimer);
++  if (!EFI_ERROR (Status)) {
++    Status = gBS->CreateEventEx (EVT_NOTIFY_SIGNAL, TPL_CALLBACK, OnExitBootServices, NULL, &gEfiEventExitBootServicesGuid, &mExit);
++  }
++
++  if (!EFI_ERROR (Status)) {
++    Status = gBS->InstallMultipleProtocolInterfaces (
++                    &mHandle,
++                    &gEfiDevicePathProtocolGuid,
++                    &mPath,
++                    &gEfiSimpleTextInProtocolGuid,
++                    &mInput,
++                    NULL
++                    );
++  }
++
++  if (!EFI_ERROR (Status)) {
++    Status = gBS->SetTimer (mTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS (POLL_MS));
++  }
++
++  if (!EFI_ERROR (Status)) {
++    EFI_STATUS  Listed = AddToConIn ();
++
++    DEBUG ((DEBUG_INFO, "IshtarKeyInput: ConIn %r\n", Listed));
++    //
++    // Binds the console stack now when it is already loaded; otherwise the boot manager's connect pass does.
++    //
++    gBS->ConnectController (mHandle, NULL, NULL, TRUE);
++  }
++
++  return Status;
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf
+new file mode 100644
+index 00000000..2010f311
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf
+@@ -0,0 +1,36 @@
++[Defines]
++  INF_VERSION                    = 0x0001001B
++  BASE_NAME                      = IshtarKeyInputDxe
++  FILE_GUID                      = B7B55E54-303C-4295-8861-A4B9D01CF621
++  MODULE_TYPE                    = DXE_DRIVER
++  VERSION_STRING                 = 1.0
++  ENTRY_POINT                    = IshtarKeyInputDxeEntry
++
++[Sources]
++  IshtarKeyInputDxe.c
++  IshtarSpmiKeys.h
++
++[Packages]
++  MdePkg/MdePkg.dec
++
++[LibraryClasses]
++  BaseLib
++  DevicePathLib
++  UefiRuntimeServicesTableLib
++  BaseMemoryLib
++  DebugLib
++  MemoryAllocationLib
++  UefiBootServicesTableLib
++  UefiDriverEntryPoint
++  UefiLib
++
++[Protocols]
++  gEfiSimpleTextInProtocolGuid                  ## PRODUCES
++  gEfiDevicePathProtocolGuid                    ## PRODUCES
++
++[Guids]
++  gEfiEventExitBootServicesGuid                 ## CONSUMES
++  gEfiGlobalVariableGuid                        ## PRODUCES
++
++[Depex]
++  gEfiTimerArchProtocolGuid AND gEfiVariableArchProtocolGuid AND gEfiVariableWriteArchProtocolGuid
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarSpmiKeys.h b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarSpmiKeys.h
+new file mode 100644
+index 00000000..90685faa
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarSpmiKeys.h
+@@ -0,0 +1,119 @@
++/** @file
++  Hardware keys of the Xiaomi Pad 6S Pro through the SPMI PMIC arbiter, as pure register-pointer code (host-testable).
++
++  Facts, all from the board devicetree and mainline Linux (drivers/input/misc/pm8941-pwrkey.c, drivers/pinctrl/qcom/pinctrl-spmi-gpio.c):
++    power key   PMIC SID 0, PON peripheral PID 0x13 (reg 0x1300), PON_RT_STS at +0x10, PON_GEN3_KPDPWR_N_SET = bit 7, set = pressed
++    volume down PMIC SID 0, same register, PON_GEN3_RESIN_N_SET = bit 6, set = pressed (the board's linux,code 114)
++    volume up   PM8550 (SID 1) GPIO6, peripheral PID 0x88 + 5 = 0x8d, RT_STS at +0x10 bit 0; gpio-keys flags 1 = active low
++  The arbiter layout (version 7, "core" 0xc400000, "cnfg" 0xc42d000, "obsrvr" 0xc440000, EE 0) is the one the kernel side already reads
++  on this hardware (BootResetCore.h): an APID is found by its PPID (SID << 8 | PID) in the APID map, and a register byte is read with an
++  extended-read command on the observer channel of that APID.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++#ifndef ISHTAR_SPMI_KEYS_H_
++#define ISHTAR_SPMI_KEYS_H_
++
++#include <stdint.h>
++
++enum {
++  SK_VERSION_V7_MIN = 0x70000000u, SK_VERSION_V8_MIN = 0x80000000u,
++  SK_FEATURES = 0x04, SK_FEATURES_APIDS_MASK = 0x7ffu,
++  SK_APID_MAP = 0x2000,
++  SK_OBS_EE_STRIDE = 0x8000, SK_OBS_APID_STRIDE = 0x20,
++  SK_CMD = 0x00, SK_STATUS = 0x08, SK_RDATA0 = 0x18,
++  SK_OP_EXT_READL = 1,
++  SK_STATUS_DONE = 1u << 0, SK_STATUS_ERRORS = 0xeu,
++  SK_POLLS = 100000,
++  SK_PPID_PON = 0x013, SK_PPID_GPIO6 = 0x18d, SK_REG_RT_STS = 0x10,
++  SK_PON_RESIN = 1u << 6, SK_PON_KPDPWR = 1u << 7,
++  SK_KEY_POWER = 1u << 0, SK_KEY_VOLDOWN = 1u << 1, SK_KEY_VOLUP = 1u << 2
++};
++
++struct sk_arbiter {
++  volatile uint32_t *core;   // 0x3000 bytes
++  volatile uint32_t *obs;    // observer channels of this EE and above (EE 0 starts at the base)
++  uint8_t ee;
++};
++
++// 0 and *apid on success. 1 unknown layout, 2 no APIDs, 3 PPID not mapped.
++static inline int sk_find_apid (const struct sk_arbiter *a, uint32_t ppid, int *apid)
++{
++  uint32_t version = a->core[0], apids = a->core[SK_FEATURES / 4] & SK_FEATURES_APIDS_MASK;
++  *apid = -1;
++  if (version < SK_VERSION_V7_MIN || version >= SK_VERSION_V8_MIN) return 1;
++  if (!apids || apids > 1024) return 2;
++  for (uint32_t i = 0; i < apids; ++i) {
++    uint32_t map = a->core[(SK_APID_MAP + 4 * i) / 4];
++    if (map && ((map >> 8) & 0xfff) == ppid) { *apid = (int) i; break; }
++  }
++  return *apid < 0 ? 3 : 0;
++}
++
++// One register byte through the observer channel. 0 ok, 1 timeout, 2 the arbiter reported an error.
++static inline int sk_read8 (const struct sk_arbiter *a, int apid, uint8_t reg, uint8_t *value)
++{
++  volatile uint32_t *ch = a->obs + (SK_OBS_EE_STRIDE * a->ee + SK_OBS_APID_STRIDE * (uint32_t) apid) / 4;
++  ch[SK_CMD / 4] = ((uint32_t) SK_OP_EXT_READL << 27) | ((uint32_t) reg << 4);
++  for (unsigned n = 0; n < SK_POLLS; ++n) {
++    uint32_t s = ch[SK_STATUS / 4];
++    if (s & SK_STATUS_DONE) {
++      if (s & SK_STATUS_ERRORS) return 2;
++      *value = (uint8_t) ch[SK_RDATA0 / 4];
++      return 0;
++    }
++  }
++  return 1;
++}
++
++struct sk_keys { int pon, gpio; };   // APIDs, -1 = not available
++
++static inline int sk_open (const struct sk_arbiter *a, struct sk_keys *k)
++{
++  int rc = sk_find_apid (a, SK_PPID_PON, &k->pon);
++  if (rc) return rc;
++  if (sk_find_apid (a, SK_PPID_GPIO6, &k->gpio)) k->gpio = -1;   // the power and volume-down keys still work without it
++  return 0;
++}
++
++// Pressed keys as SK_KEY_* bits. 0 ok; non-zero when a read failed (nothing is reported pressed then).
++static inline int sk_sample (const struct sk_arbiter *a, const struct sk_keys *k, uint8_t *pressed)
++{
++  uint8_t v = 0;
++  *pressed = 0;
++  int rc = sk_read8 (a, k->pon, SK_REG_RT_STS, &v);
++  if (rc) return rc;
++  if (v & SK_PON_KPDPWR) *pressed |= SK_KEY_POWER;
++  if (v & SK_PON_RESIN) *pressed |= SK_KEY_VOLDOWN;
++  if (k->gpio >= 0) {
++    rc = sk_read8 (a, k->gpio, SK_REG_RT_STS, &v);
++    if (rc) { *pressed = 0; return rc; }
++    if (!(v & 1)) *pressed |= SK_KEY_VOLUP;       // active low
++  }
++  return 0;
++}
++
++// Debounce and auto-repeat. A key counts as pressed after two identical samples. Volume keys repeat while held: first after
++// `delay` polls, then every `period` polls. step() returns the keys to report now (new presses plus repeats).
++struct sk_filter { uint8_t last, stable; uint16_t held[3]; };
++
++static inline uint8_t sk_step (struct sk_filter *f, uint8_t sample, uint16_t delay, uint16_t period)
++{
++  uint8_t out = 0;
++  if (sample == f->last) {
++    uint8_t fresh = (uint8_t) (sample & ~f->stable);
++    f->stable = sample;
++    out = fresh;
++    for (unsigned i = 0; i < 3; ++i) {
++      uint8_t bit = (uint8_t) (1u << i);
++      if (!(sample & bit)) { f->held[i] = 0; continue; }
++      if (fresh & bit) { f->held[i] = 0; continue; }
++      ++f->held[i];
++      if (bit != SK_KEY_POWER && f->held[i] >= delay && (f->held[i] - delay) % period == 0) out |= bit;
++    }
++  }
++  f->last = sample;
++  return out;
++}
++
++#endif
+diff --git a/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/Test/keys_host.c b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/Test/keys_host.c
+new file mode 100644
+index 00000000..f70ebfd5
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Drivers/IshtarKeyInputDxe/Test/keys_host.c
+@@ -0,0 +1,97 @@
++// Host test of IshtarSpmiKeys.h against a software model of the arbiter's observer channels.
++#include <assert.h>
++#include <pthread.h>
++#include <stdio.h>
++#include <string.h>
++#include <unistd.h>
++#include "../IshtarSpmiKeys.h"
++
++static volatile uint32_t core[0x3000 / 4];
++static volatile uint32_t obs[0x8000 / 4];
++static volatile int stop, fail;
++static uint8_t pon_sts, gpio_sts;
++static int pon_apid = 9, gpio_apid = 21;
++
++static void *device (void *arg)
++{
++  (void) arg;
++  uint32_t seen[64] = {0};
++  while (!stop) {
++    for (int apid = 0; apid < 64; ++apid) {
++      volatile uint32_t *ch = &obs[(SK_OBS_APID_STRIDE * apid) / 4];
++      uint32_t cmd = ch[SK_CMD / 4];
++      if (!cmd) { seen[apid] = 0; continue; }
++      if (cmd == seen[apid]) continue;
++      seen[apid] = cmd;
++      assert ((cmd >> 27) == SK_OP_EXT_READL && ((cmd >> 4) & 0xff) == SK_REG_RT_STS && (cmd & 7) == 0);
++      if (fail) { ch[SK_STATUS / 4] = SK_STATUS_DONE | 2; }
++      else {
++        ch[SK_RDATA0 / 4] = apid == pon_apid ? pon_sts : apid == gpio_apid ? gpio_sts : 0xee;
++        ch[SK_STATUS / 4] = SK_STATUS_DONE;
++      }
++    }
++    usleep (20);
++  }
++  return NULL;
++}
++// A new command for the same register must re-arm the model: clear the channel between reads.
++static void rearm (void) { for (int a = 0; a < 64; ++a) { obs[(SK_OBS_APID_STRIDE * a) / 4 + 2] = 0; obs[(SK_OBS_APID_STRIDE * a) / 4] = 0; } usleep (2000); }   /* the model sees the idle channel before the next command */
++
++int main (void)
++{
++  pthread_t t;
++  struct sk_arbiter arb = { core, obs, 0 };
++  struct sk_keys k;
++  uint8_t pressed;
++  int apid;
++
++  core[0] = 0x70000000u; core[SK_FEATURES / 4] = 40;
++  core[(SK_APID_MAP + 4 * 3) / 4] = (0x070u << 8) | 1;
++  core[(SK_APID_MAP + 4 * pon_apid) / 4] = (SK_PPID_PON << 8) | 1;
++  core[(SK_APID_MAP + 4 * gpio_apid) / 4] = ((uint32_t) SK_PPID_GPIO6 << 8) | 1;
++  assert (sk_find_apid (&arb, SK_PPID_PON, &apid) == 0 && apid == pon_apid);
++  assert (sk_find_apid (&arb, 0x555, &apid) == 3 && apid == -1);
++  core[0] = 0x60000000u; assert (sk_find_apid (&arb, SK_PPID_PON, &apid) == 1);
++  core[0] = 0x80000000u; assert (sk_find_apid (&arb, SK_PPID_PON, &apid) == 1);
++  core[0] = 0x70000000u; core[SK_FEATURES / 4] = 0; assert (sk_find_apid (&arb, SK_PPID_PON, &apid) == 2);
++  core[SK_FEATURES / 4] = 40;
++  assert (sk_open (&arb, &k) == 0 && k.pon == pon_apid && k.gpio == gpio_apid);
++
++  assert (pthread_create (&t, NULL, device, NULL) == 0);
++  struct { uint8_t pon, gpio, want; } cases[] = {
++    {0x00, 0x01, 0},                                   // nothing pressed (gpio high = released)
++    {0x80, 0x01, SK_KEY_POWER}, {0x40, 0x01, SK_KEY_VOLDOWN}, {0xc0, 0x01, SK_KEY_POWER | SK_KEY_VOLDOWN},
++    {0x00, 0x00, SK_KEY_VOLUP},                        // gpio low = pressed
++    {0x3f, 0x01, 0},                                   // other PON status bits are not keys
++    {0x80, 0x00, SK_KEY_POWER | SK_KEY_VOLUP},
++  };
++  for (unsigned i = 0; i < sizeof cases / sizeof *cases; ++i) {
++    rearm (); pon_sts = cases[i].pon; gpio_sts = cases[i].gpio; fail = 0;
++    int rc = sk_sample (&arb, &k, &pressed);
++    if (rc || pressed != cases[i].want) fprintf (stderr, "case %u rc=%d got=%x want=%x\n", i, rc, pressed, cases[i].want);
++    assert (rc == 0 && pressed == cases[i].want);
++  }
++  rearm (); fail = 1; assert (sk_sample (&arb, &k, &pressed) != 0 && pressed == 0);
++  fail = 0;
++  struct sk_keys nogpio = { pon_apid, -1 };
++  rearm (); pon_sts = 0x80; gpio_sts = 0; assert (sk_sample (&arb, &nogpio, &pressed) == 0 && pressed == SK_KEY_POWER);
++  stop = 1; pthread_join (t, NULL);
++
++  // Debounce and repeat: two identical samples make a press; volume keys repeat after `delay` polls, then every `period`; power never.
++  struct sk_filter f = {0};
++  assert (sk_step (&f, SK_KEY_VOLUP, 4, 2) == 0);                       // first sample alone: not yet
++  assert (sk_step (&f, SK_KEY_VOLUP, 4, 2) == SK_KEY_VOLUP);            // confirmed
++  unsigned repeats = 0, polls = 0;
++  for (; polls < 12; ++polls) repeats += sk_step (&f, SK_KEY_VOLUP, 4, 2) == SK_KEY_VOLUP;
++  assert (repeats == 5);                                               // at held = 4, 6, 8, 10, 12
++  assert (sk_step (&f, 0, 4, 2) == 0 && sk_step (&f, 0, 4, 2) == 0);   // release
++  assert (sk_step (&f, SK_KEY_VOLDOWN, 4, 2) == 0 && sk_step (&f, SK_KEY_VOLDOWN, 4, 2) == SK_KEY_VOLDOWN);
++  assert (sk_step (&f, SK_KEY_VOLDOWN, 4, 2) == 0);                    // a glitch of one sample is ignored below
++  f = (struct sk_filter){0};
++  assert (sk_step (&f, SK_KEY_POWER, 4, 2) == 0 && sk_step (&f, SK_KEY_POWER, 4, 2) == SK_KEY_POWER);
++  for (unsigned i = 0; i < 40; ++i) assert (sk_step (&f, SK_KEY_POWER, 4, 2) == 0);   // power does not repeat
++  f = (struct sk_filter){0};
++  assert (sk_step (&f, SK_KEY_VOLUP, 4, 2) == 0 && sk_step (&f, 0, 4, 2) == 0 && sk_step (&f, SK_KEY_VOLUP, 4, 2) == 0);   // bounce: no press
++  puts ("PASS: arbiter lookup, key decoding, read errors, debounce, repeat");
++  return 0;
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Include/APRIORI.inc b/Platforms/Xiaomi/ishtarPkg/Include/APRIORI.inc
+new file mode 100644
+index 00000000..2483954e
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Include/APRIORI.inc
+@@ -0,0 +1,131 @@
++APRIORI DXE {
++  INF MdeModulePkg/Core/Dxe/DxeMain.inf
++  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/EnvDxe/EnvDxe.inf
++!endif
++
++  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
++  INF MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
++  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
++  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
++  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
++  INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
++  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/SmemDxe/SmemDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/DALSYSDxe/DALSYSDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/HWIODxe/HWIODxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ChipInfoDxe/ChipInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PlatformInfoDxe/PlatformInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ProjectInfoDxe/ProjectInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/HALIOMMUDxe/HALIOMMUDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ULogDxe/ULogDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/IPCCDxe/IPCCDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/GLinkDxe/GLinkDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/CmdDbDxe/CmdDbDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PwrUtilsDxe/PwrUtilsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/NpaDxe/NpaDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/RpmhDxe/RpmhDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/VcsDxe/VcsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ClockDxe/ClockDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ICBDxe/ICBDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ShmBridgeDxe/ShmBridgeDxeLA.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TzDxe/ScmDxeCompat.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TLMMDxe/TLMMDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/I2CDxe/I2CDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SPMIDxe/SPMIDxe.inf
++!endif
++
++  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/PmicDxe/PmicDxeLa.inf
++!endif
++
++  INF MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
++  INF MdeModulePkg/Universal/Disk/PartitionDxe/PartitionDxe.inf
++  INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/SdccDxe/SdccDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UFSDxe/UFSDxe.inf
++!endif
++
++  INF FatPkg/EnhancedFatDxe/Fat.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/TzDxe/TzDxeLA.inf
++!endif
++
++  INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/DDRInfoDxe/DDRInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/FeatureEnablerDxe/FeatureEnablerDxe.inf
++!endif
++!if $(USE_CUSTOM_DISPLAY_DRIVER) == 1
++  INF ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
++  INF ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf
++!else
++  INF SiliciumPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
++!endif
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/PILProxyDxe/PILProxyDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PILDxe/PILDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SPSSDxe/SPSSDxe.inf
++!endif
++
++  INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
++  INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
++  INF EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
++  INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
++  INF MdeModulePkg/Universal/PrintDxe/PrintDxe.inf
++  INF Binaries/ishtar/MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
++  INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
++  INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
++  INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/SPIDxe/SPIDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PmicGlinkDxe/PmicGlinkDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbPwrCtrlDxe/UsbPwrCtrlDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ChargerExDxe/ChargerExDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbfnDwc3Dxe/UsbfnDwc3Dxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/XhciPciEmulationDxe/XhciPciEmulationDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/XhciDxe/XhciDxe.inf
++!endif
++
++  INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
++  INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
++  INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbMsdDxe/UsbMsdDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbDeviceDxe/UsbDeviceDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ButtonsDxe/ButtonsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TsensDxe/TsensDxe.inf
++
++  # Vendor peripherals stay off with ISHTAR_VENDOR_HW = 0.
++
++  INF Binaries/ishtar/QcomPkg/Drivers/LimitsDxe/LimitsDxe.inf
++  # Vendor peripherals stay off with ISHTAR_VENDOR_HW = 0.
++  INF Binaries/ishtar/QcomPkg/Drivers/GpiDxe/GpiDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UCDxe/UCDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/RNGDxe/RngDxe.inf
++!endif
++
++  INF EmbeddedPkg/SimpleTextInOutSerial/SimpleTextInOutSerial.inf
++  INF MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
++  INF MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
++  INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/RscDxe/RscDxe.inf
++!endif
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Include/DXE.inc b/Platforms/Xiaomi/ishtarPkg/Include/DXE.inc
+new file mode 100644
+index 00000000..aa231eb6
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Include/DXE.inc
+@@ -0,0 +1,132 @@
++  INF MdeModulePkg/Core/Dxe/DxeMain.inf
++  INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/EnvDxe/EnvDxe.inf
++!endif
++
++  INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
++  INF MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
++  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
++  INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
++  INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/ShmBridgeDxe/ShmBridgeDxeLA.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TzDxe/ScmDxeCompat.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TzDxe/TzDxeLA.inf
++!endif
++
++  INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
++  INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
++  INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
++  INF EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
++  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
++  INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
++  INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
++  INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
++  INF ArmPkg/Drivers/ArmGicDxe/ArmGicDxe.inf
++  INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/ChipInfoDxe/ChipInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/IPCCDxe/IPCCDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/GLinkDxe/GLinkDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PlatformInfoDxe/PlatformInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ProjectInfoDxe/ProjectInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/DALSYSDxe/DALSYSDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/HALIOMMUDxe/HALIOMMUDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/HWIODxe/HWIODxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/I2CDxe/I2CDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TLMMDxe/TLMMDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PmicDxe/PmicDxeLa.inf
++!endif
++
++  INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
++  INF ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf
++  INF UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.inf
++  # The XNU loader is part of the firmware: a driver loaded from a volume is
++  # refused by the image verification of this build.
++  INF DarwinBootPkg/Driver/DarwinBoot.inf
++  INF MdeModulePkg/Universal/Disk/DiskIoDxe/DiskIoDxe.inf
++  INF MdeModulePkg/Universal/Disk/PartitionDxe/PartitionDxe.inf
++  INF FatPkg/EnhancedFatDxe/Fat.inf
++  INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/UFSDxe/UFSDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/CmdDbDxe/CmdDbDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PwrUtilsDxe/PwrUtilsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/RpmhDxe/RpmhDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/NpaDxe/NpaDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ULogDxe/ULogDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/VcsDxe/VcsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ClockDxe/ClockDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SPMIDxe/SPMIDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ICBDxe/ICBDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SmemDxe/SmemDxe.inf
++!endif
++  INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/RscDxe/RscDxe.inf
++!endif
++
++  INF EmbeddedPkg/SimpleTextInOutSerial/SimpleTextInOutSerial.inf
++  INF MdeModulePkg/Universal/PrintDxe/PrintDxe.inf
++  INF MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
++  INF MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
++  INF ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf
++  INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
++
++  # Vendor peripherals stay off with ISHTAR_VENDOR_HW = 0.
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/GpiDxe/GpiDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SPIDxe/SPIDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SdccDxe/SdccDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/FeatureEnablerDxe/FeatureEnablerDxe.inf
++
++  # USE_CUSTOM_DISPLAY_DRIVER = 1: stock display chain (board DEPEX glue,
++  # unchanged vendor DisplayDxe with the M1 panel data from RAW.inc).
++  # Otherwise SimpleFbDxe publishes a GOP on the frame buffer the previous
++  # stage left scanning out.
++!endif
++!if $(USE_CUSTOM_DISPLAY_DRIVER) == 1
++  INF ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
++  INF ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/DisplayDxe/DisplayDxe.inf
++!else
++  INF SiliciumPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
++!endif
++
++  # Vendor peripherals stay off with ISHTAR_VENDOR_HW = 0.
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/ButtonsDxe/ButtonsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/ChargerExDxe/ChargerExDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PmicGlinkDxe/PmicGlinkDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/QcomChargerDxe/QcomChargerDxeLA.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbPwrCtrlDxe/UsbPwrCtrlDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/TsensDxe/TsensDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/LimitsDxe/LimitsDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/DDRInfoDxe/DDRInfoDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbfnDwc3Dxe/UsbfnDwc3Dxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/XhciPciEmulationDxe/XhciPciEmulationDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/XhciDxe/XhciDxe.inf
++!endif
++
++  INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
++  INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
++  INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
++
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbMsdDxe/UsbMsdDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbDeviceDxe/UsbDeviceDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbConfigDxe/UsbConfigDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UsbInitDxe/UsbInitDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/UCDxe/UCDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/RNGDxe/RngDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PILDxe/PILDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/PILProxyDxe/PILProxyDxe.inf
++  INF Binaries/ishtar/QcomPkg/Drivers/SPSSDxe/SPSSDxe.inf
++!endif
+diff --git a/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc b/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
+new file mode 100644
+index 00000000..fe83d02f
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Include/RAW.inc
+@@ -0,0 +1,13 @@
++// Board raw files from Binaries/ishtar: extracted from ishtar's stock HyperOS uefi image (UniXNU-ishtar docs/HANDOFF.md T0).
++  FILE FREEFORM = A1E235DE-E825-4591-9623-C43175811826 {
++    SECTION UI = "SecParti.cfg"
++    SECTION RAW = Binaries/ishtar/RawFiles/SecParti.cfg
++  }
++
++!if $(USE_CUSTOM_DISPLAY_DRIVER) == 1
++  # Stock ishtar panel data (FFS GUID from the stock image still to be confirmed).
++  FILE FREEFORM = 15A84758-9EE1-4543-9C82-F430A70F0813 {
++    SECTION UI = "Panel_M1_42_02_0a_ltpo_dsc_cmd.xml"
++    SECTION RAW = Binaries/ishtar/RawFiles/Panel_M1_42_02_0a_ltpo_dsc_cmd.xml
++  }
++!endif
+diff --git a/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c b/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c
+new file mode 100644
+index 00000000..15c27eff
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.c
+@@ -0,0 +1,56 @@
++#include <Library/ConfigurationMapLib.h>
++
++STATIC
++EFI_CONFIGURATION_ENTRY_DESCRIPTOR
++gConfigurationDescriptor[] = {
++  {"AllowNonPersistentVarsInRetail", 0x1},
++  {"DDRInfoNotifyFlag", 0x0},
++  {"DRAM_CLK_PERIOD_ADDR", 0x240BA050},
++  {"DetectRetailUserAttentionHotkey", 0x0},
++  {"DetectRetailUserAttentionHotkeyCode", 0x17},
++  {"DloadCookieAddr", 0x1FD9000},
++  {"DloadCookieValue", 0x30},
++  {"EarlyInitCoreCnt", 0x1},
++  {"EnableACPIFallback", 0x0},
++  {"EnableDisplayImageFv", 0x0},
++  {"EnableDisplayThread", 0x0},
++  {"EnableLogFsSyncInRetail", 0x0},
++  {"EnableMultiCoreFvDecompression", 0x0},
++  {"EnableMultiThreading", 0x0},
++  {"EnableOEMSetupAppInRetail", 0x0},
++  {"EnableSDHCSwitch", 0x1},
++  {"EnableShell", 0x1},
++  {"EnableUefiSecAppDebugLogDump", 0x0},
++  {"EnableUfsIOC", 0x1},
++  {"EnableVariablePolicyEngine", 0x0},
++  {"LoadAutoImageInPILFlag", 0x1},
++  {"MaxCoreCnt", 0x8},
++  {"MaxLogFileSize", 0x400000},
++  {"NumActiveCores", 0x1},
++  {"NumCpus", 0x8},
++  {"PilSubsysDbgCookieAddr", 0x146AA6DC},
++  {"PilSubsysDbgCookieVal", 0x53444247},
++  {"PwrBtnShutdownFlag", 0x0},
++  {"Sdc1GpioConfigOff", 0xA00},
++  {"Sdc1GpioConfigOn", 0x1E92},
++  {"Sdc2GpioConfigOff", 0xA00},
++  {"Sdc2GpioConfigOn", 0x1E92},
++  {"SecPagePoolCount", 0x800},
++  {"SecurityFlag", 0xC4},
++  {"SharedIMEMBaseAddr", 0x146AA000},
++  {"ShmBridgememSize", 0xA00000},
++  {"USBHS1_Config", 0x0},
++  {"UefiMemUseThreshold", 0xE1},
++  {"UfsSmmuConfigForOtherBootDev", 0x1},
++  {"UsbFnIoRevNum", 0x10001}
++};
++
++VOID
++GetConfigurationMap (
++  OUT EFI_CONFIGURATION_ENTRY_DESCRIPTOR **ConfigurationDescriptor,
++  OUT UINT8                               *ConfigurationDescriptorCount)
++{
++  // Pass Data
++  *ConfigurationDescriptor      = gConfigurationDescriptor;
++  *ConfigurationDescriptorCount = ARRAY_SIZE (gConfigurationDescriptor);
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.inf b/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.inf
+new file mode 100644
+index 00000000..c7b7ff71
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.inf
+@@ -0,0 +1,14 @@
++[Defines]
++  INF_VERSION                    = 0x00010005
++  BASE_NAME                      = ConfigurationMapLib
++  FILE_GUID                      = D7DDE228-62E4-43E3-B5A1-AB29FB9B0A35
++  MODULE_TYPE                    = BASE
++  VERSION_STRING                 = 1.0
++  LIBRARY_CLASS                  = ConfigurationMapLib
++
++[Sources]
++  ConfigurationMapLib.c
++
++[Packages]
++  MdePkg/MdePkg.dec
++  QcomPkg/QcomPkg.dec
+diff --git a/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c b/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c
+new file mode 100644
+index 00000000..c7356148
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.c
+@@ -0,0 +1,101 @@
++// SPDX-License-Identifier: BSD-3-Clause
++// ishtar: derived from shengPkg (uefi-sheng 20ac23d). Reservations: ianchb/sm8550-mainline 42f3b40c702abbc37c3a04c95af008cd283aeaf3;
++// the stock ishtar and sheng trees share them (same kalama-v2 base, identical overlay reservations).
++// UEFI allocations remain experimental QRD8550 layout candidates. See PORTING.md.
++#include <Library/MemoryMapLib.h>
++
++STATIC EFI_MEMORY_REGION_DESCRIPTOR gMemoryDescriptor[] = {
++  {"hyp-region@80000000", 0x80000000, 0x00A00000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"cpusys-vm-region@80a00000", 0x80A00000, 0x00400000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"hyp-tags-region@80e00000", 0x80E00000, 0x003D0000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"XBL Ramdump", 0x81200000, 0x00280000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"XBL DT", 0x81A00000, 0x00040000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"AOP", 0x81C00000, 0x00060000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"aop-cmd-db-region@81c60000", 0x81C60000, 0x00020000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"aop-config-merged-region@81c800", 0x81C80000, 0x00074000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"SMEM", 0x81D00000, 0x00200000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"adsp-mhi-region@81f00000", 0x81F00000, 0x00020000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"global-sync-region@82600000", 0x82600000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"tz-stat-region@82700000", 0x82700000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"ipa-fw-region@9b080000", 0x9B080000, 0x00010000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"ipa-gsi-region@9b090000", 0x9B090000, 0x0000A000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"gpu-micro-code-region@9b09a000", 0x9B09A000, 0x00002000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"spss-region@9b100000", 0x9B100000, 0x00180000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"spu-tz-shared-region@9b280000", 0x9B280000, 0x00060000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"spu-modem-shared-region@9b2e000", 0x9B2E0000, 0x00020000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"camera-region@9b300000", 0x9B300000, 0x00800000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"video-region@9bb00000", 0x9BB00000, 0x00700000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"cvp-region@9c200000", 0x9C200000, 0x00700000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"cdsp-region@9c900000", 0x9C900000, 0x02000000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"q6-cdsp-dtb-region@9e900000", 0x9E900000, 0x00080000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"q6-adsp-dtb-region@9e980000", 0x9E980000, 0x00080000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"adspslpi-region@9ea00000", 0x9EA00000, 0x04680000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"rmtfs-region@ccd00000", 0xCCD00000, 0x00280000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"tz-reserved-region@d8000000", 0xD8000000, 0x00100000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"xbl-sc-region@d8100000", 0xD8100000, 0x00040000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"cpucp-fw-region@d8140000", 0xD8140000, 0x001C0000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"qtee-region@d8300000", 0xD8300000, 0x00500000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"ta-region@d8800000", 0xD8800000, 0x08A00000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"tz-tags-region@e1200000", 0xE1200000, 0x02740000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"hwfence-shbuf-region@e6440000", 0xE6440000, 0x002DD000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"llcc-lpi-region@ff800000", 0xFF800000, 0x00600000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"FD Reserved", 0xA7000000, 0x00100000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK},
++  {"UEFI FD", 0xA7100000, 0x00300000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK},
++  {"UEFI FD Reserved", 0xA7400000, 0x00200000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK},
++  {"Info Blk", 0xA7601000, 0x00001000, AddMem, SYS_MEM, SYS_MEM_CAP, RtData, WRITE_BACK_XN},
++  {"MMU PageTables", 0xA7602000, 0x00003000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"Log Buffer", 0xA7605000, 0x00008000, AddMem, SYS_MEM, SYS_MEM_CAP, RtData, WRITE_BACK_XN},
++  {"UEFI Stack", 0xA760D000, 0x00040000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"SEC Heap", 0xA764D000, 0x0008C000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"Sched Heap", 0xA76D9000, 0x00400000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"FV Region", 0xA7AD9000, 0x00400000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"UEFI RESV", 0xA7ED9000, 0x00127000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK_XN},
++  {"Kernel", 0xA8000000, 0x10000000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
++  {"DXE Heap", 0xBAB00000, 0x0D1C0000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  // DRAM between the carveouts above and the Linux reserved-memory table (reservations.json), inside
++  // 0x80000000..0x100000000, which the SMEM RAM partition table lists as SDRAM. UEFI accepted these on hardware.
++  {"DRAM gap 0xC7CC0000", 0xC7CC0000, 0x05040000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  {"DRAM gap 0xCCF80000", 0xCCF80000, 0x0B080000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  {"DRAM gap 0xE671D000", 0xE671D000, 0x190E3000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  // Second DRAM bank. ishtar is 12 GB like Resources/DTBs/nuwa.dts (ABL /memory: 0x880000000 + 0x39D00000, a 2 MiB hole,
++  // 0x8B9F00000 + 0x1E00000, then 0x8C0000000 + 3 GiB and 0x980000000 + 6 GiB); ishtar's HyperOS /proc/iomem shows
++  // 0x8C0000000-0xAFFFFEFFF. sheng's low entry (+0x3B300000) would cross the hole, so it stops at 0x8B9D00000.
++  {"DRAM bank 1 low", 0x880000000, 0x39D00000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  // 5 GiB as sheng (enough for the 4.75 GiB DarwinBoot window); ishtar has 9 GiB here. Grow after a hardware check.
++  {"DRAM bank 1 high", 0x8C0000000, 0x140000000, AddMem, SYS_MEM, SYS_MEM_CAP, Conv, WRITE_BACK_XN},
++  {"IMEM Base", 0x14680000, 0x0002A000, NoHob, MMAP_IO, INITIALIZED, Conv, NS_DEVICE},
++  {"IMEM Cookie Base", 0x146AA000, 0x00016000, AddDev, MMAP_IO, INITIALIZED, Conv, NS_DEVICE},
++  {"IPC_ROUTER_TOP", 0x00400000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"SECURITY CONTROL", 0x00780000, 0x00007000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"QUP", 0x00800000, 0x00300000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"PRNG_CFG_PRNG", 0x010C0000, 0x0000C000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"CRYPTO0 CRYPTO", 0x01DC0000, 0x00040000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"CORE_TOP_CSR", 0x01F00000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"PERIPH_SS", 0x08800000, 0x00100000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"USB", 0x0A600000, 0x00200000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"AOSS", 0x0B000000, 0x04000000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"TLMM", 0x0F000000, 0x01000000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"SMMU", 0x15000000, 0x00200000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"APSS_HM", 0x17000000, 0x02000000, AddDev, MMAP_IO, UNCACHEABLE, MmIO, NS_DEVICE},
++  {"NOMAP 811D0000", 0x811D0000, 0x00030000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"RSRV0 gap0", 0x81480000, 0x00580000, AddMem, SYS_MEM, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
++  {"XBL Ramdump", 0x81A40000, 0x001C0000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"RSRV1", 0x86E00000, 0x02A00000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_BACK_XN},
++  {"PIL Reserved gap0", 0x8A800000, 0x10880000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"PIL Reserved gap1", 0x9B09C000, 0x00064000, AddMem, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN},
++  {"Display Demura gap0", 0xA3080000, 0x02500000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_THROUGH_XN},
++  {"DBI Dump", 0xA6100000, 0x00F00000, NoHob, MMAP_IO, INITIALIZED, Conv, UNCACHED_UNBUFFERED_XN},
++  {"CPU Vectors", 0xA7600000, 0x00001000, AddMem, SYS_MEM, SYS_MEM_CAP, BsData, WRITE_BACK},
++  {"Display Reserved", 0xB8000000, 0x02B00000, AddMem, MEM_RES, SYS_MEM_CAP, Reserv, WRITE_THROUGH_XN},
++  {"NOMAP FFE00000", 0xFFE00000, 0x00200000, HobOnlyNoCacheSetting, MEM_RES, UNCACHEABLE, Reserv, UNCACHED_UNBUFFERED_XN}
++};
++
++VOID
++GetMemoryMap (
++  OUT EFI_MEMORY_REGION_DESCRIPTOR **MemoryDescriptor,
++  OUT UINT8                         *MemoryDescriptorCount)
++{
++  // Pass Data
++  *MemoryDescriptor      = gMemoryDescriptor;
++  *MemoryDescriptorCount = ARRAY_SIZE (gMemoryDescriptor);
++}
+diff --git a/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.inf b/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.inf
+new file mode 100644
+index 00000000..b0fd0f2b
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/Library/MemoryMapLib/MemoryMapLib.inf
+@@ -0,0 +1,15 @@
++[Defines]
++  INF_VERSION                    = 0x00010005
++  BASE_NAME                      = MemoryMapLib
++  FILE_GUID                      = 375C4FF0-1905-4BA7-A5CA-7D40D25F5EF3
++  MODULE_TYPE                    = BASE
++  VERSION_STRING                 = 1.0
++  LIBRARY_CLASS                  = MemoryMapLib
++
++[Sources]
++  MemoryMapLib.c
++
++[Packages]
++  ArmPkg/ArmPkg.dec
++  MdePkg/MdePkg.dec
++  SiliciumPkg/SiliciumPkg.dec
+diff --git a/Platforms/Xiaomi/ishtarPkg/ishtar.dec b/Platforms/Xiaomi/ishtarPkg/ishtar.dec
+new file mode 100644
+index 00000000..e69de29b
+diff --git a/Platforms/Xiaomi/ishtarPkg/ishtar.dsc b/Platforms/Xiaomi/ishtarPkg/ishtar.dsc
+new file mode 100644
+index 00000000..e8a4409d
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/ishtar.dsc
+@@ -0,0 +1,122 @@
++##
++#  Copyright (c) 2011 - 2022, ARM Limited. All rights reserved.
++#  Copyright (c) 2014, Linaro Limited. All rights reserved.
++#  Copyright (c) 2015 - 2020, Intel Corporation. All rights reserved.
++#  Copyright (c) 2018, Bingxing Wang. All rights reserved.
++#  Copyright (c) Microsoft Corporation.
++#
++#  SPDX-License-Identifier: BSD-2-Clause-Patent
++##
++
++################################################################################
++#
++# Defines Section - statements that will be processed to create a Makefile.
++#
++################################################################################
++[Defines]
++  PLATFORM_NAME                  = ishtar
++  PLATFORM_GUID                  = F9728C5D-4394-4AC0-97DE-BCC5DBC6F23F
++  PLATFORM_VERSION               = 0.1
++  DSC_SPECIFICATION              = 0x00010005
++  OUTPUT_DIRECTORY               = Build/ishtarPkg
++  SUPPORTED_ARCHITECTURES        = AARCH64
++  BUILD_TARGETS                  = RELEASE|DEBUG
++  SKUID_IDENTIFIER               = DEFAULT
++  FLASH_DEFINITION               = ishtarPkg/ishtar.fdf
++  USE_CUSTOM_DISPLAY_DRIVER      = 0
++
++  #
++  # 0 = Mu drivers only. The previous stage's display keeps scanning out, so
++  #     the boot manager is visible without any vendor hardware driver.
++  # 1 = also load the stock vendor hardware drivers from Binaries/ishtar. On sheng
++  #     the equivalent set blanks the panel; untested here.
++  #
++  ISHTAR_VENDOR_HW                = 0
++
++  #
++  # 0 = SM8550-AB
++  # 1 = SM8550-AC
++  #
++  SOC_TYPE                       = 0
++
++!include KailuaPkg/KailuaPkg.dsc.inc
++
++!if ($(USE_CUSTOM_DISPLAY_DRIVER) == 1) && ($(ISHTAR_VENDOR_HW) == 0)
++  !error The stock DisplayDxe chain needs ISHTAR_VENDOR_HW = 1
++!endif
++
++[PcdsFixedAtBuild]
++  #
++  # DDR Memory
++  #
++  gArmTokenSpaceGuid.PcdSystemMemoryBase|0x80000000
++
++  #
++  # UEFI Stack
++  #
++  gArmPlatformTokenSpaceGuid.PcdCPUCoresStackBase|0xA760D000
++  gArmPlatformTokenSpaceGuid.PcdCPUCorePrimaryStackSize|0x40000
++
++  #
++  # SMBIOS
++  #
++  gSiliciumPkgTokenSpaceGuid.PcdSmbiosSystemManufacturer|"Xiaomi"
++  gSiliciumPkgTokenSpaceGuid.PcdSmbiosSystemModel|"ishtar"
++  gSiliciumPkgTokenSpaceGuid.PcdSmbiosSystemRetailModel|"ishtar"
++  gSiliciumPkgTokenSpaceGuid.PcdSmbiosSystemRetailSku|"ishtar"
++  gSiliciumPkgTokenSpaceGuid.PcdSmbiosSystemBoardModel|"ishtar"
++
++  #
++  # Simple Frame Buffer
++  #
++  # Panel M1 42 02 0a (Binaries/ishtar/RawFiles/Panel_M1_42_02_0a_ltpo_dsc_cmd.xml):
++  # 1440x3200, DSC command mode, 60 Hz as the stock XBL leaves it. Stride 5760
++  # (= width x 4) was measured on the DPU by the old ishtar port.
++  #
++  gSiliciumPkgTokenSpaceGuid.PcdFrameBufferWidth|1440
++  gSiliciumPkgTokenSpaceGuid.PcdFrameBufferHeight|3200
++  gSiliciumPkgTokenSpaceGuid.PcdFrameBufferColorDepth|32
++  # Scale 2 gives 100 lines of 90 columns. The log wraps, so the screen always shows the
++  # newest lines; the platform debug level is left unchanged.
++  gSiliciumPkgTokenSpaceGuid.PcdFrameBufferFontScale|2
++  # Pause per log line so a video of the screen shows what loads last.
++  gSiliciumPkgTokenSpaceGuid.PcdFrameBufferDelay|30000
++
++
++  #
++  # Platform PEI
++  #
++  gQcomPkgTokenSpaceGuid.PcdPlatformType|"LA"
++!if $(ISHTAR_VENDOR_HW) == 0
++  # Intermittent stall right after "MMU: enabled" (int-103 photos): PlatformPeim scanned the stock UEFI's leftover FD window and
++  # called into its scheduler protocol. Without the stock vendor drivers nothing reads those HOBs.
++  gQcomPkgTokenSpaceGuid.PcdBuildXblHobs|FALSE
++!endif
++
++[LibraryClasses]
++  #
++  # Memory Libraries
++  #
++  MemoryMapLib|ishtarPkg/Library/MemoryMapLib/MemoryMapLib.inf
++
++  #
++  # QCOM Libraries
++  #
++  ConfigurationMapLib|ishtarPkg/Library/ConfigurationMapLib/ConfigurationMapLib.inf
++
++[Components]
++  #
++  # ACPI Tables
++  #
++  UniXNUPkg/Application/UniXNU/UniXNU.inf
++  UniXNUPkg/Driver/UniXNUDxe/UniXNUDxe.inf
++  ishtarPkg/Drivers/IshtarDisplayDepexDxe/IshtarDisplayDepexDxe.inf
++  ishtarPkg/Drivers/IshtarGopLogDxe/IshtarGopLogDxe.inf
++  ishtarPkg/Drivers/IshtarBootMemoryDxe/IshtarBootMemoryDxe.inf
++  UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.inf
++  ishtarPkg/Drivers/IshtarKeyInputDxe/IshtarKeyInputDxe.inf
++  DarwinBootPkg/Driver/DarwinBoot.inf
++
++[LibraryClasses]
++  UniXNULib|UniXNUPkg/Library/UniXNULib/UniXNULib.inf
++  FdtLib|MdePkg/Library/BaseFdtLib/BaseFdtLib.inf
+diff --git a/Platforms/Xiaomi/ishtarPkg/ishtar.fdf b/Platforms/Xiaomi/ishtarPkg/ishtar.fdf
+new file mode 100644
+index 00000000..2657b269
+--- /dev/null
++++ b/Platforms/Xiaomi/ishtarPkg/ishtar.fdf
+@@ -0,0 +1,137 @@
++##
++#  Copyright (c) 2018, Linaro Limited. All rights reserved.
++#
++#  SPDX-License-Identifier: BSD-2-Clause-Patent
++##
++
++################################################################################
++#
++# FD Section
++# The [FD] Section is made up of the definition statements and a
++# description of what goes into  the Flash Device Image.  Each FD section
++# defines one flash "device" image.  A flash device image may be one of
++# the following: Removable media bootable image (like a boot floppy
++# image,) an Option ROM image (that would be "flashed" into an add-in
++# card,) a System "Flash"  image (that would be burned into a system's
++# flash) or an Update ("Capsule") image that will be used to update and
++# existing system flash.
++#
++################################################################################
++
++[FD.SILICIUM_UEFI]
++BaseAddress   = $(FD_BASE)|gArmTokenSpaceGuid.PcdFdBaseAddress # The base address of the FLASH Device.
++Size          = $(FD_SIZE)|gArmTokenSpaceGuid.PcdFdSize        # The size in bytes of the FLASH Device
++ErasePolarity = 1
++
++# This one is tricky, it must be: BlockSize * NumBlocks = Size
++BlockSize     = 0x1000
++NumBlocks     = $(FD_BLOCKS)
++
++################################################################################
++#
++# Following are lists of FD Region layout which correspond to the locations of different
++# images within the flash device.
++#
++# Regions must be defined in ascending order and may not overlap.
++#
++# A Layout Region start with a eight digit hex offset (leading "0x" required) followed by
++# the pipe "|" character, followed by the size of the region, also in hex with the leading
++# "0x" characters. Like:
++# Offset|Size
++# PcdOffsetCName|PcdSizeCName
++# RegionType <FV, DATA, or FILE>
++#
++################################################################################
++
++0x00000000|$(FD_SIZE)
++gArmTokenSpaceGuid.PcdFvBaseAddress|gArmTokenSpaceGuid.PcdFvSize
++FV = FVMAIN_COMPACT
++
++################################################################################
++#
++# FV Section
++#
++# [FV] section is used to define what components or modules are placed within a flash
++# device file.  This section also defines order the components and modules are positioned
++# within the image.  The [FV] section consists of define statements, set statements and
++# module statements.
++#
++################################################################################
++
++[FV.FvMain]
++FvNameGuid         = CD8D4C84-20AD-4073-8A28-3400FAE05941
++BlockSize          = 0x1000
++NumBlocks          = 0        # This FV gets compressed so make it just big enough
++FvAlignment        = 8        # FV alignment and FV attributes setting.
++ERASE_POLARITY     = 1
++MEMORY_MAPPED      = TRUE
++STICKY_WRITE       = TRUE
++LOCK_CAP           = TRUE
++LOCK_STATUS        = TRUE
++WRITE_DISABLED_CAP = TRUE
++WRITE_ENABLED_CAP  = TRUE
++WRITE_STATUS       = TRUE
++WRITE_LOCK_CAP     = TRUE
++WRITE_LOCK_STATUS  = TRUE
++READ_DISABLED_CAP  = TRUE
++READ_ENABLED_CAP   = TRUE
++READ_STATUS        = TRUE
++READ_LOCK_CAP      = TRUE
++READ_LOCK_STATUS   = TRUE
++
++  !include Include/APRIORI.inc
++  !include Include/DXE.inc
++  !include Include/RAW.inc
++
++  # RAM Manager reads the RAM partition table published by the vendor stack.
++!if $(ISHTAR_VENDOR_HW) == 1
++  INF SiliciumPkg/Drivers/RamManagerDxe/RamManagerDxe.inf
++!endif
++
++  # SmBios
++  INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
++  INF SiliciumPkg/Drivers/SmBiosTableDxe/SmBiosTableDxe.inf
++
++  # UniXNU
++  INF UniXNUPkg/Application/UniXNU/UniXNU.inf
++  INF UniXNUPkg/Driver/UniXNUDxe/UniXNUDxe.inf
++
++  # IORT DT
++  INF QcomPkg/Drivers/IortDtDxe/IortDtDxe.inf
++
++  # Device Tree
++  #INF EmbeddedPkg/Drivers/DtPlatformDxe/DtPlatformDxe.inf
++  #FILE FREEFORM = 25462CDA-221F-47DF-AC1D-259CFAA4E326 {
++  #  SECTION RAW = ishtarPkg/FdtBlob/sm8550-xiaomi-ishtar.dtb
++  #  SECTION UI = "DeviceTreeBlob"
++  #}
++
++  !include QcomPkg/Extra.fdf.inc
++
++[FV.FVMAIN_COMPACT]
++FvAlignment        = 8
++ERASE_POLARITY     = 1
++MEMORY_MAPPED      = TRUE
++STICKY_WRITE       = TRUE
++LOCK_CAP           = TRUE
++LOCK_STATUS        = TRUE
++WRITE_DISABLED_CAP = TRUE
++WRITE_ENABLED_CAP  = TRUE
++WRITE_STATUS       = TRUE
++WRITE_LOCK_CAP     = TRUE
++WRITE_LOCK_STATUS  = TRUE
++READ_DISABLED_CAP  = TRUE
++READ_ENABLED_CAP   = TRUE
++READ_STATUS        = TRUE
++READ_LOCK_CAP      = TRUE
++READ_LOCK_STATUS   = TRUE
++
++  INF SiliciumPkg/Sec/Sec.inf
++
++  FILE FV_IMAGE = 9E21FD93-9C72-4c15-8C4B-E77F1DB2D792 {
++    SECTION GUIDED EE4E5898-3914-4259-9D6E-DC7BD79403CF PROCESSING_REQUIRED = TRUE {
++      SECTION FV_IMAGE = FVMAIN
++    }
++  }
++
++  !include SiliciumPkg/Common.fdf.inc
+diff --git a/Resources/Configs/ishtar.toml b/Resources/Configs/ishtar.toml
+new file mode 100755
+index 00000000..718b6fad
+--- /dev/null
++++ b/Resources/Configs/ishtar.toml
+@@ -0,0 +1,25 @@
++#
++# Boot Shim Configs
++#
++[boot_shim]
++requires_kernel_header = true
++
++#
++# UEFI FD Configs
++#
++[uefi_fd]
++base = 0xA7100000
++size = 0x300000
++
++#
++# Android Boot Image Kernel Configs
++#
++[boot_image_kernel]
++kernel_compression = "gzip"
++append_dtb         = true
++
++#
++# Android Boot Image Configs
++#
++[boot_image]
++header_version = 1
+-- 
+2.39.5 (Apple Git-154)
+

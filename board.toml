@@ -4,9 +4,8 @@
 "name" = "ishtar"
 "soc" = "SM8550"
 "description" = "Xiaomi 13 Ultra"
-# The package must appear as kits/sheng: UniXNU's build-sheng-source-storage.py and build-arm-driver.py (NativeAdreno)
-# read board sources from that fixed path. Keep this until those scripts take board.kit.
-"kit" = "sheng"
+# Appears as kits/ishtar; UniXNU ishtar/ios27 passes it to the archive builders as UNIXNU_BOARD_KIT.
+"kit" = "ishtar"
 "soc_source" = "sm8550"
 # UniXNU branch ishtar/ios27 (local, based on feat/ipados27-gpu-parity 87bf1f9) adds this profile.
 "os_profile" = "ios-27.0.1-24A446"
@@ -33,12 +32,12 @@
 
 
 ["firmware"]
-# ../uefi-ishtar: UniXNU/uefi-sheng (20ac23d) + ishtarPkg on branch ishtar (178bb0b). It already embeds UniXNU,
+# ../uefi-ishtar: UniXNU/uefi-sheng (20ac23d) + ishtarPkg on branch ishtar (firmware/0001). It already embeds UniXNU,
 # UniXNUDxe, DarwinBoot, UniXNURamDiskDxe, DiskIoDxe and FAT, like sheng. Values below follow UniXNU-sheng's.
 "config" = "ishtar"
 "dsc" = "Platforms/Xiaomi/ishtarPkg/ishtar.dsc"
 "fd" = "Build/ishtarPkg/{target}_CLANGPDB/FV/SILICIUM_UEFI.fd"
-# Binaries: ishtarPkg reads Binaries/nuwa/RawFiles/SecParti.cfg (Project-Silicium Device-Binaries).
+# Binaries: ishtarPkg reads Binaries/ishtar (ishtar's stock UEFI, extracted per docs/HANDOFF.md T0).
 "submodules" = ["Binaries", "Common/Mu", "Common/Mu_OEM_Sample", "Silicium-ACPI", "Silicon/Silicium/OpensslPkg/Library/OpensslLib/openssl"]
 # SoC-level: masks interrupts that have no handler (IPCC INTID 0x105 among them).
 "patches" = ["Resources/MuPatches/Gic-Spurious.patch"]

@@ -5,5 +5,6 @@
 # native-smp-secondary.patch keeps only its start.s hunk (SM8550 numbers cores in MPIDR Aff1); the board_config.h hunk
 # is dropped because the 12377 arch layer already gives BCM2837 MAX_CPUS 8.
 native-smp-secondary.patch
-# Unchanged from sm8550-common; zzz-boot-progress.patch (OS layer) patches its bsd_init.c lines.
-sheng-platform-power.patch
+# sm8550-common's sheng-platform-power.patch, unchanged; zzz-boot-progress.patch (UniXNU OS layer) patches its
+# bsd_init.c lines, so its XNU_SHENG_PMGR / sheng_pmgr_run identifiers stay.
+ishtar-platform-power.patch
