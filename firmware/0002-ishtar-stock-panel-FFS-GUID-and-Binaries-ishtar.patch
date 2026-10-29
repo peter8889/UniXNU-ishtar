@@ -1,7 +1,7 @@
 From 0eff5a49f53ee8306d08781eefc0bce5f970741f Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 22:17:10 +0100
-Subject: [PATCH 2/2] ishtar: stock panel FFS GUID and Binaries/ishtar
+Subject: [PATCH 2/3] ishtar: stock panel FFS GUID and Binaries/ishtar
 
 RAW.inc: Panel_M1_42_02_0a_ltpo_dsc_cmd.xml is FFS 922A8AF4-47F4-44F7-97C4-D6D157F694B7
 in ishtar's stock uefi.elf (OS3.0.308.0.WMACNXM); 15A84758 was sheng's.

@@ -1,0 +1,28 @@
+From c948d0fa91ac1f2ce03bd01aa68370392f9a3749 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Thu, 29 Oct 2026 22:23:07 +0100
+Subject: [PATCH 3/3] Binaries: markakash/Device-Binaries (branch ishtar holds
+ ishtar/)
+
+Change-Id: I06bdeebeea083582f0d68996a17641857b5ec8b2
+---
+ .gitmodules | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/.gitmodules b/.gitmodules
+index 86911697..d4941311 100644
+--- a/.gitmodules
++++ b/.gitmodules
+@@ -1,7 +1,8 @@
+ [submodule "Binaries"]
+ 	path = Binaries
+-	url = https://github.com/Project-Silicium/Device-Binaries.git
++	url = https://github.com/markakash/Device-Binaries.git
+ 	ignore = untracked
++	branch = ishtar
+ [submodule "Common/Mu"]
+ 	path = Common/Mu
+ 	url = https://github.com/microsoft/mu_plus.git
+-- 
+2.56.0
+
