@@ -6,7 +6,8 @@ Shared SM8550 code belongs to `UniXNU-sm8550-common`; build tools, OS profiles a
 
 ## Before editing
 
-1. Read [porting.toml](porting.toml) (authoritative status, findings, next actions) and [README.md](README.md).
+1. Read [porting.toml](porting.toml) (authoritative status, findings, next actions), [README.md](README.md) and,
+   to build or boot, [docs/HANDOFF.md](docs/HANDOFF.md) (ordered tasks T1-T11).
 2. Read the UniXNU guides: [device repository](https://unixnu.com/porting/device-repository),
    [records](https://unixnu.com/porting/records), [device tree](https://unixnu.com/porting/device-tree),
    [arm64e](https://unixnu.com/porting/arm64e), and the component docs in `../UniXNU/docs/drivers/`.
@@ -17,8 +18,9 @@ Shared SM8550 code belongs to `UniXNU-sm8550-common`; build tools, OS profiles a
 
 ## Rules
 
-- The machine has no `dtc`, `gh` or `ipsw`, and installing tools is not allowed. Use stdlib Python,
-  `~/miniconda3/bin/python3` (3.13) for UniXNU, macOS `compression_tool` and `aea`, and CI for anything else.
+- The first machine (jf60678) has no `dtc`, `gh` or `ipsw` and installing tools is not allowed there: use stdlib
+  Python, `~/miniconda3/bin/python3` (3.13) for UniXNU, `/usr/bin/python3` for HTTPS, macOS `compression_tool` and
+  `aea`. Build and boot steps run on a machine with the tools listed in docs/HANDOFF.md.
 - Keep upstream file names, boot-argument names (`sheng-*`), class names and bundle IDs when copying from sheng or
   UniXNU, so diffs against upstream stay readable. Record the source commit of every copy.
 - `board.kit` stays `sheng` until UniXNU's build scripts stop hard-coding `kits/sheng`.

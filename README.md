@@ -76,6 +76,7 @@ Running the payload's userdata step writes the iOS images into `userdata` and **
 | `unixnu/` | UniXNU commit adding the iOS 27 profile |
 | `reports/` | host check outputs |
 | `docs/MIGRATION.md` | old ishtar patches 2000-2035 mapped to their new home |
+| `docs/HANDOFF.md` | ordered tasks to the first boot, for an agent on a machine with the build tools |
 
 Apple, Qualcomm and Xiaomi binaries are never committed (`.gitignore`); decompiled stock trees go to `ref/`.
 
