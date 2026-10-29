@@ -570,6 +570,167 @@
       "original_sha256": "3acebfb55ec964c3a547fbbcca07ed5d3ffefc5091aa09c3137bce583db96dbc",
       "native_symbol": "_read_random",
       "evidence": "(void *buf, u_int n): calls prng_funcs.refresh(prng_ctx) through the constant table at +0x768, then loops prng_funcs.generate(prng_ctx, cpu_number(), MIN(n, 256), buf) through +0x770; osfmk/prng/prng_random.c read_random with read_random_generate inlined (CCKPRNG_GENERATE_MAX_NBYTES 256). Called by corecrypto."
+    },
+    {
+      "original": "0xfffffff00abde90c",
+      "original_size": 308,
+      "original_sha256": "55e1b5e554730bab36213059f1bc00730d7fd682b6bf63a66b1f6774d4d47e78",
+      "native_symbol": "_lck_mtx_gate_try_close",
+      "evidence": "Source order: the only unmatched run between matched _lck_mtx_gate_alloc_init and _lck_mtx_gate_open has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _lck_mtx_gate_try_close holds this position there (original 308 bytes, reference 12). Called by AppleImage4."
+    },
+    {
+      "original": "0xfffffff00abdea40",
+      "original_size": 284,
+      "original_sha256": "5af2096f4fcf9199049a7b876853b33d34e8b8e26d65fe5f492646bb77b8aa73",
+      "native_symbol": "_lck_mtx_gate_close",
+      "evidence": "Source order: the only unmatched run between matched _lck_mtx_gate_alloc_init and _lck_mtx_gate_open has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _lck_mtx_gate_close holds this position there (original 284 bytes, reference 12). Called by AppleImage4."
+    },
+    {
+      "original": "0xfffffff00ac20880",
+      "original_size": 140,
+      "original_sha256": "e54771629d65498f627e64abfc9938f6c6e4d86062da80bb880052884e2d3d26",
+      "native_symbol": "_task_reference",
+      "evidence": "Source order: the only unmatched run between matched _task_deallocate_grp and _SENDING_NOTIFICATION__THIS_THREAD_IS_CONSUMING_TOO_MUCH_CPU has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _task_reference holds this position there (original 140 bytes, reference 164). Called by CoreAnalyticsFamily,IOGPUFamily,IOHIDFamily,IOReportFamily,IOSurface."
+    },
+    {
+      "original": "0xfffffff00ac2090c",
+      "original_size": 68,
+      "original_sha256": "346830e15a8f45feb9dc46d6d769739adcfb40ea60bb6ae8435665a7ab04746c",
+      "native_symbol": "_task_deallocate",
+      "evidence": "Source order: the only unmatched run between matched _task_deallocate_grp and _SENDING_NOTIFICATION__THIS_THREAD_IS_CONSUMING_TOO_MUCH_CPU has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _task_deallocate holds this position there (original 68 bytes, reference 96). Called by CoreAnalyticsFamily,IOGPUFamily,IOHIDFamily,IOReportFamily,IOSurface."
+    },
+    {
+      "original": "0xfffffff00ac475f4",
+      "original_size": 80,
+      "original_sha256": "23128e7c8529c846918e9ae9f51452820bf7eb733f1ef18a81849f6145d68321",
+      "native_symbol": "_zfree",
+      "evidence": "Source order: the only unmatched run between matched _zfree_nozero_n and _zfree_percpu has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _zfree holds this position there (original 80 bytes, reference 92). Called by apfs."
+    },
+    {
+      "original": "0xfffffff00ac48238",
+      "original_size": 128,
+      "original_sha256": "8d3c95deebf0774c9957f793e211f69002884b2dfa997461ae3a61b3947d3c72",
+      "native_symbol": "_zone_require_ro",
+      "evidence": "Source order: the only unmatched run between matched _zalloc_ro and _zalloc_ro_mut has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _zone_require_ro holds this position there (original 128 bytes, reference 144). Called by AppleMobileFileIntegrity,sandbox."
+    },
+    {
+      "original": "0xfffffff00ac9033c",
+      "original_size": 144,
+      "original_sha256": "d94bc6374125c24af3605a9e733d5f264fdb0187481b265fab3c2cb203febbc0",
+      "native_symbol": "_vm_kernel_addrhide",
+      "evidence": "Source order: the only unmatched run between matched _vm_kernel_addrhash and _vm_kernel_addrperm_external has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _vm_kernel_addrhide holds this position there (original 144 bytes, reference 104). Called by IOGPUFamily,IOSurface."
+    },
+    {
+      "original": "0xfffffff00ad87160",
+      "original_size": 120,
+      "original_sha256": "771b957e12b31f01c86f56241d7462e1800cdb50913f5b868bbc0e05c5894819",
+      "native_symbol": "_cluster_max_io_size",
+      "evidence": "Source order: the only unmatched run between matched _cluster_init and _cluster_throttle_io_limit has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _cluster_max_io_size holds this position there (original 120 bytes, reference 140). Called by apfs."
+    },
+    {
+      "original": "0xfffffff00ada1af4",
+      "original_size": 12,
+      "original_sha256": "29a3d38acb8a600e9719f081fad28d27a3bb22e4b4d88cbbf6894ca8e48a25eb",
+      "native_symbol": "_vfs_mount_recovery",
+      "evidence": "Source order: the only unmatched run between matched _vnode_lookupat and _vfs_getvfs has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _vfs_mount_recovery holds this position there (original 12 bytes, reference 12). Called by apfs,sandbox."
+    },
+    {
+      "original": "0xfffffff00add2190",
+      "original_size": 88,
+      "original_sha256": "2526994cc7e6766b5e2cf011e56f3efa8bc4fdea303332322b2c2d884cb5affe",
+      "native_symbol": "_vfs_vnodecovered_noblock",
+      "evidence": "Source order: the only unmatched run between matched _vfs_vnodecovered and _vfs_setdevvp has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _vfs_vnodecovered_noblock holds this position there (original 88 bytes, reference 108). Called by sandbox."
+    },
+    {
+      "original": "0xfffffff00add40f8",
+      "original_size": 196,
+      "original_sha256": "fb65f5adb8e02fed48729e954684d986a80838739276d39d7e6ccb3aa0192813",
+      "native_symbol": "_vnode_setmountedon",
+      "evidence": "Source order: the only unmatched run between matched _vnode_ismountedon and _vnode_clearmountedon has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _vnode_setmountedon holds this position there (original 196 bytes, reference 228). Called by apfs."
+    },
+    {
+      "original": "0xfffffff00adee60c",
+      "original_size": 84,
+      "original_sha256": "edd372c1874957b42e0e3929423ceebf60f4521c26f5f18d386357bf5409a085",
+      "native_symbol": "_decmpfs_cnode_free",
+      "evidence": "Source order: the only unmatched run between matched _decmpfs_cnode_alloc and _decmpfs_cnode_init has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _decmpfs_cnode_free holds this position there (original 84 bytes, reference 96). Called by apfs."
+    },
+    {
+      "original": "0xfffffff00b092a0c",
+      "original_size": 416,
+      "original_sha256": "5a33e0d4ee0978d9c468903f55f26a7499126aa313be871c1eb8f8ac9d85f85c",
+      "native_symbol": "_ktriage_record",
+      "evidence": "Source order: the only unmatched run between matched _kdebug_storage_alloc and _ktriage_extract has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _ktriage_record holds this position there (original 416 bytes, reference 492). Called by apfs."
+    },
+    {
+      "original": "0xfffffff00b0a34e0",
+      "original_size": 164,
+      "original_sha256": "9fd680155efe5f6e860d3f871d78a97a6c75499bc567e78181afea455a9efd19",
+      "native_symbol": "_csproc_get_platform_binary",
+      "evidence": "Source order: the only unmatched run between matched _csvnode_get_teamid and _csproc_get_platform_path has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _csproc_get_platform_binary holds this position there (original 164 bytes, reference 204). Called by AppleMobileFileIntegrity,sandbox."
+    },
+    {
+      "original": "0xfffffff00b0dd71c",
+      "original_size": 120,
+      "original_sha256": "1464e4dd2a79f82931b0f0c2e6d234cf464dcbde62e587c76d48b5d82772dfcc",
+      "native_symbol": "_proc_ppid",
+      "evidence": "Source order: the only unmatched run between matched _proc_checkdeadrefs and _proc_original_ppid has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _proc_ppid holds this position there (original 120 bytes, reference 136). Called by AppleMobileFileIntegrity,sandbox."
+    },
+    {
+      "original": "0xfffffff00b0de068",
+      "original_size": 368,
+      "original_sha256": "e7c577b28c4eb9e493475aed9e918df9d6b2ff3956d6f5410beaa3ad09fb230d",
+      "native_symbol": "_proc_parent",
+      "evidence": "Source order: the only unmatched run between matched _proc_setplatformdata and _proc_name has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _proc_parent holds this position there (original 368 bytes, reference 600). Called by sandbox."
+    },
+    {
+      "original": "0xfffffff00b0e4f2c",
+      "original_size": 232,
+      "original_sha256": "989757634825b887141301b1ddef6f5552ae9ee2df6989b1b362681a6b1e1dc7",
+      "native_symbol": "_proc_get_syscall_filter_mask",
+      "evidence": "Source order: the only unmatched run between matched _proc_get_syscall_filter_mask_size and _proc_set_syscall_filter_mask has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _proc_get_syscall_filter_mask holds this position there (original 232 bytes, reference 288). Called by sandbox."
+    },
+    {
+      "original": "0xfffffff00b28f6d4",
+      "original_size": 156,
+      "original_sha256": "5553302adae740c56d00f7eedbaf51101a5d9d10b2dec14fe482b9593842cb35",
+      "native_symbol": "__ZN11OSSerialize10setIndexedEb",
+      "evidence": "Source order: the only unmatched run between matched __ZN11OSSerialize18binaryWithCapacityEjPFPK15OSMetaClassBasePvPS_P12OSCollectionPK8OSSymbolS2_ES3_ and __ZN11OSSerialize15addBinaryObjectEPK15OSMetaClassBasejPKvjPj has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and __ZN11OSSerialize10setIndexedEb holds this position there (original 156 bytes, reference 156). Called by IOHIDFamily."
+    },
+    {
+      "original": "0xfffffff00b32cf8c",
+      "original_size": 308,
+      "original_sha256": "51508b5d53a929e37a741234e67e7b7011baff3b3c20c56cf6a3982bb5c792f3",
+      "native_symbol": "__ZN18IOMemoryDescriptor26ktraceEmitPhysicalSegmentsEv",
+      "evidence": "Source order: the only unmatched run between matched __ZN25IOGeneralMemoryDescriptor11wireVirtualEj and __ZN25IOGeneralMemoryDescriptor10writeBytesEyPKvy has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and __ZN18IOMemoryDescriptor26ktraceEmitPhysicalSegmentsEv holds this position there (original 308 bytes, reference 456). Called by IOSurface."
+    },
+    {
+      "original": "0xfffffff00b4077d4",
+      "original_size": 164,
+      "original_sha256": "8a0dac3d252fdc87f688272c9fbb482aef46b03c811a0894f3dcf38a1bf5257a",
+      "native_symbol": "_panic_with_options",
+      "evidence": "Source order: the only unmatched run between matched _Assert and _panic_with_options_and_initiator has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _panic_with_options holds this position there (original 164 bytes, reference 72). Called by AppleARMWatchdogTimer."
+    },
+    {
+      "original": "0xfffffff00ad3ff40",
+      "original_size": 8,
+      "original_sha256": "5caeb23da292efcdf84e0d18d6c00be519c5feb7583b04b6aa0dbbe3ca6f3195",
+      "native_symbol": "_lck_spin_try_lock",
+      "evidence": "bti; b _hw_lock_try (matched). First of the two hw_lock_try wrappers after the matched _lck_spin_lock_grp, as lck_spin_try_lock / lck_spin_try_lock_grp in osfmk/arm/locks_arm.c."
+    },
+    {
+      "original": "0xfffffff00ad3ff50",
+      "original_size": 8,
+      "original_sha256": "9ca959f78525f414e0080a8c3ebc40f57d72dc065a7d4795c8727fa74a8f6863",
+      "native_symbol": "_lck_spin_unlock",
+      "evidence": "bti; b _hw_lock_unlock (matched). The only hw_lock_unlock wrapper in the lck_spin block, just before the matched _kdp_lck_spin_is_acquired: lck_spin_unlock in osfmk/arm/locks_arm.c. Called by 8 kexts (AppleImage4, AppleARMPlatform, ApplePMGR, apfs, ...)."
+    },
+    {
+      "original": "0xfffffff00b0de25c",
+      "original_size": 28,
+      "original_sha256": "0985a276dd3d175ca7f44e704160ad3c76824a445657006e513ebfadab51ea08",
+      "native_symbol": "_proc_best_name",
+      "evidence": "(proc_t p): returns p+0x56d (p_name) when its first byte is nonzero, else p+0x55c (p_comm); follows the matched _proc_name. bsd/kern/kern_proc.c proc_best_name."
     }
   ],
   "data": [
