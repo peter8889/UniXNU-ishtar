@@ -864,6 +864,76 @@
       "original_sha256": "3a0f9b045134fc64d495700a609b9b2260508eef534a4e6a2d0a97ba7e1ecd69",
       "native_symbol": "_ml_get_cpu_count",
       "evidence": "Returns the word at 0xfffffff007e1125c = topology_info + 4 (num_cpus): the matched _ml_get_max_cpu_number reads max_cpu_id (+8) at 0xfffffff007e11260, so the struct starts at 0xfffffff007e11258. osfmk/arm64/machine_routines.c ml_get_cpu_count; sits before the matched _ml_get_boot_cpu_number. AppleARMPlatform trap."
+    },
+    {
+      "original": "0xfffffff00abfd9fc",
+      "original_size": 44,
+      "original_sha256": "e65480f23baa2b9b3f4c89f1f427056ef00cdab271310085fa292e0e24d9a226",
+      "native_symbol": "_preemption_enabled",
+      "evidence": "Returns 0 when the per-CPU preemption level ([tpidr_el1+0x1c0]) is non-zero, else whether DAIF has IRQ/FIQ unmasked: osfmk/kern/sched_prim.c preemption_enabled (get_preemption_level() == 0 && ml_get_interrupts_enabled())."
+    },
+    {
+      "original": "0xfffffff00ad3d804",
+      "original_size": 16,
+      "original_sha256": "7a19bae6d03d743d2533c0a4a80daae82d83cc1f203fead056edf43aaab50ae4",
+      "native_symbol": "_cpu_number",
+      "evidence": "Returns cpu_data->cpu_number (ldrh [tpidr_el1, #0x1b0]); directly after the matched _cpu_to_processor. Called by AppleARMPlatform and AppleARMWatchdogTimer."
+    },
+    {
+      "original": "0xfffffff00ad453bc",
+      "original_size": 8,
+      "original_sha256": "79fc3d25ecd2677ccc48955f54497e8bcae7d9c110e6afb44b1c13d3247185b6",
+      "native_symbol": "_ml_cpu_init_completed",
+      "evidence": "A single b to the matched _sched_cpu_init_completed: osfmk/arm64/machine_routines.c ml_cpu_init_completed."
+    },
+    {
+      "original": "0xfffffff00b3c1bdc",
+      "original_size": 24,
+      "original_sha256": "eb34ee04f1aade85fcaea53b3579301730cc5477a269f4b5f5421cda9f170852",
+      "native_symbol": "_IOPMRootDomainGetWillShutdown",
+      "evidence": "Returns a __bss flag != 0 (gWillShutdown); directly before the matched _registerSleepWakeInterest, the position of IOPMRootDomainGetWillShutdown in the symbol-bearing RELEASE+LTO reference of xnu-12377."
+    },
+    {
+      "original": "0xfffffff00b33ebc0",
+      "original_size": 16,
+      "original_sha256": "36c614153927e889ba546ff5d63d9e12d41556108c9ba5f965a537c849f64fef",
+      "native_symbol": "__ZN12IOPlatformIOD2Ev",
+      "evidence": "16 bytes right after the matched IOPlatformIO::IOPlatformIO(const OSMetaClass *); the symbol-bearing RELEASE+LTO reference of xnu-12377 has IOPlatformIO::~IOPlatformIO() (16 bytes) there."
+    },
+    {
+      "original": "0xfffffff00b34085c",
+      "original_size": 72,
+      "original_sha256": "18882fd0201cc37d5b070a4bc9847b61f5c6c3afc8dfdccee8969ce1e65e0a17",
+      "native_symbol": "__ZN24IOCPUInterruptControllerC1Ev",
+      "evidence": "72 bytes after the matched IOCPUInterruptController::operator new (112 bytes in both kernels); the symbol-bearing RELEASE+LTO reference of xnu-12377 continues C1Ev (72), C2Ev (72), IOCPURunPlatformQuiesceActions (140), IOCPURunPlatformActiveActions (140) and this kernel has 72, 72, 140, 140 before the matched IOCPURunPlatformPanicActions."
+    },
+    {
+      "original": "0xfffffff00b3408a4",
+      "original_size": 72,
+      "original_sha256": "18882fd0201cc37d5b070a4bc9847b61f5c6c3afc8dfdccee8969ce1e65e0a17",
+      "native_symbol": "__ZN24IOCPUInterruptControllerC2Ev",
+      "evidence": "Second of the 72, 72, 140, 140 run after IOCPUInterruptController::operator new; see the C1Ev pin."
+    },
+    {
+      "original": "0xfffffff00b3408ec",
+      "original_size": 140,
+      "original_sha256": "1d4bcc8d3ceca6ebe21250fc1bd79a8deb7d62ea98e41de0793c93cbc5beee65",
+      "native_symbol": "_IOCPURunPlatformQuiesceActions",
+      "evidence": "Third of the 72, 72, 140, 140 run after IOCPUInterruptController::operator new (iokit/Kernel/IOCPU.cpp); see the C1Ev pin."
+    },
+    {
+      "original": "0xfffffff00b340978",
+      "original_size": 140,
+      "original_sha256": "442de483eb5bf588f00a05507284538f59089b5bcd76e1211ae3769d835dfc9c",
+      "native_symbol": "_IOCPURunPlatformActiveActions",
+      "evidence": "Fourth of the 72, 72, 140, 140 run, before the matched IOCPURunPlatformPanicActions; see the C1Ev pin."
+    },
+    {
+      "original": "0xfffffff00ad3c5b8",
+      "original_size": 352,
+      "original_sha256": "96760776384a8ee4cdf01a6fd4b995b7981bbf772dcbb34ac91bd5087b96ef78",
+      "native_symbol": "_ml_arm_sleep",
+      "evidence": "Before the matched _cpu_machine_idle_init, after two functions of 156 and 20 bytes that equal cpu_timebase_init and cpu_cluster_id in the symbol-bearing RELEASE+LTO reference of xnu-12377, which then has ml_arm_sleep (osfmk/arm/cpu.c)."
     }
   ],
   "data": [
