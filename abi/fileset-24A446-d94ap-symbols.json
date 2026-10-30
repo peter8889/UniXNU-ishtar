@@ -1018,6 +1018,48 @@
       "original_sha256": "2d767a25cad584c24f27d6565f9ff59e7702746ebe2d621f27345f5824766931",
       "native_symbol": "_proc_is64bit",
       "evidence": "(proc_t p): p ? (p_flag & P_LP64 (bit 2 of byte +0x444)) != 0 : 0; after the matched _proc_ucred_locked, as bsd/kern/kern_proc.c proc_is64bit."
+    },
+    {
+      "original": "0xfffffff00abdd25c",
+      "original_size": 312,
+      "original_sha256": "531750158ae2ddc5bbe95a253eeb23741fa441e3a6d303203617df5d5972ceb5",
+      "native_symbol": "_lck_rw_gate_destroy",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_rw gate run after lck_rw_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. Called by APFS."
+    },
+    {
+      "original": "0xfffffff00abdd394",
+      "original_size": 348,
+      "original_sha256": "a2ea3223fefc4fd0a3bb44ae52768a9d341caad7e7e6bf23956b0cc5f5cafb14",
+      "native_symbol": "_lck_rw_gate_free",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_rw gate run after lck_rw_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. "
+    },
+    {
+      "original": "0xfffffff00abdd4f0",
+      "original_size": 308,
+      "original_sha256": "1c58b0f0832311999d71fa2cbfbad06d080e17f9c14e8886229364bd3d1391dd",
+      "native_symbol": "_lck_rw_gate_try_close",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_rw gate run after lck_rw_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. The matcher had bound it to the one-argument static gate_try_close(gate)."
+    },
+    {
+      "original": "0xfffffff00abdd624",
+      "original_size": 284,
+      "original_sha256": "edd42dc9e8b9a5704d450fcca9208afba91ebdb2c473b2eadbde9f00cbeb0e92",
+      "native_symbol": "_lck_rw_gate_close",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_rw gate run after lck_rw_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. The matcher had bound it to the one-argument static gate_close(gate), so APFS's (lock, gate) call passed the lock as the gate: \"Gate used is invalid\" under VNOP_LOOKUP from devfs_kernel_mount (2026-10-30)."
+    },
+    {
+      "original": "0xfffffff00abde678",
+      "original_size": 312,
+      "original_sha256": "e022dfa324d1b580a3136d9aba620f5db16ce1b28ebb5aa682d1d2753ec0c5e7",
+      "native_symbol": "_lck_mtx_gate_destroy",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_mtx gate run after lck_mtx_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. "
+    },
+    {
+      "original": "0xfffffff00abde7b0",
+      "original_size": 348,
+      "original_sha256": "12d11d407b43fb25d6cdc0497a74c49c8e0c29902041a5d40020c4830b5db86c",
+      "native_symbol": "_lck_mtx_gate_free",
+      "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_mtx gate run after lck_mtx_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. "
     }
   ],
   "data": [
