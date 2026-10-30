@@ -631,8 +631,8 @@
       "original": "0xfffffff00ada1af4",
       "original_size": 12,
       "original_sha256": "29a3d38acb8a600e9719f081fad28d27a3bb22e4b4d88cbbf6894ca8e48a25eb",
-      "native_symbol": "_vfs_mount_recovery",
-      "evidence": "Source order: the only unmatched run between matched _vnode_lookupat and _vfs_getvfs has the same length in this kernel and in the symbol-bearing RELEASE+LTO reference of xnu-12377, and _vfs_mount_recovery holds this position there (original 12 bytes, reference 12). Called by apfs,sandbox."
+      "native_symbol": "_vnode_lookup",
+      "evidence": "mov x4, #0; b _vnode_lookupat (matched): bsd/vfs/kpi_vfs.c vnode_lookup(path, flags, vpp, ctx) = vnode_lookupat(..., NULL). Sandbox calls it as vnode_lookup(\"/private/var\", 1, &vp, ctx). An earlier source-order pin bound it to the same-size _vfs_mount_recovery, which returned 0 without setting vp: sandbox then called VNOP_IOCTL(NULL, ...) during devfs_kernel_mount (data abort, 2026-10-30)."
     },
     {
       "original": "0xfffffff00add2190",
