@@ -1205,5 +1205,11 @@
       "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_removenamedstream\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_removenamedstream_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
     }
   ],
-  "sites": []
+  "sites": [
+    {
+      "site": "0xfffffff0080c85d0",
+      "native_symbol": "_unixnu_kernel_stack_shift",
+      "evidence": "AppleMobileFileIntegrity's GOT slot for PAGE_SHIFT_CONST. Its only reader is the CoreEntitlements DER iterator's stack check (sp & ((1 << *slot) - 1) < 0x80 returns error 2), which assumes the stack base is aligned to 1 << shift, as on 16 KiB-page Apple kernels where the two lower guard pages are 32 KiB. On the native 4 KiB kernel the stack starts 8 KiB into a 32 KiB-aligned allocation, so the page shift (and 14) give false out-of-stack errors at fixed call depths (OSEntitlements copyDictionary failed with 14 on the exec path). Bound to unixnu_kernel_stack_shift, the allocation alignment shift (15), for which sp & mask stays at least 8 KiB inside any stack. The other ~70 components keep PAGE_SHIFT_CONST for page arithmetic. iPhone17,2: the only AppleMobileFileIntegrity pointer to PAGE_SHIFT_CONST (0xfffffff007dec770), at __DATA_CONST+0x6dc0 as on iPad17,3 (0xfffffe0008136458); kc-port rejected the iPad slot only because its target address differs. Reproduced on ishtar: \"AMFI: failed to create OSDictionary copy: 14\" @OSEntitlements.cpp:863 on launchd's first spawn (2026-10-30)."
+    }
+  ]
 }
