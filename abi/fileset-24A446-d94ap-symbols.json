@@ -1060,6 +1060,48 @@
       "original_sha256": "12d11d407b43fb25d6cdc0497a74c49c8e0c29902041a5d40020c4830b5db86c",
       "native_symbol": "_lck_mtx_gate_free",
       "evidence": "Exported (lock, gate) entry: reads the gate from x1 (ldr w8, [x1, #0x10]; type check 0x60000) with the static gate helper inlined. The lck_mtx gate run after lck_mtx_gate_alloc_init is 312, 348, 308, 284 bytes in both the lck_rw and lck_mtx blocks, osfmk/kern/locks.c order destroy, free, try_close, close. "
+    },
+    {
+      "original": "0xfffffff00ac13a78",
+      "original_size": 32,
+      "original_sha256": "9a93d02a35e12565a488fa7ef3b04a2dfb1649e744cc6763fdbfc8cd4841b30c",
+      "native_symbol": "_task_set_cs_auxiliary_info",
+      "evidence": "(task, info): NULL task returns 4 (KERN_INVALID_ARGUMENT), else stores info into the task and returns 0: osfmk/kern/task.c task_set_cs_auxiliary_info. AMFI calls it from its execve label hook while launchd is exec'd (2026-10-30)."
+    },
+    {
+      "original": "0xfffffff00ac9c780",
+      "original_size": 16,
+      "original_sha256": "276ace16e28764284c8e4df85d50c3237f1260383e795a7daf32a736fa0e3f91",
+      "native_symbol": "_vm_map_unwire",
+      "evidence": "Sets x4 to a constant and b _vm_map_unwire_impl (matched): osfmk/vm/vm_map.c vm_map_unwire. Called by AMFI."
+    },
+    {
+      "original": "0xfffffff00b0a2bec",
+      "original_size": 12,
+      "original_sha256": "dc8e9afd348a80d12cda8cb1dc37d30bf8b0bf7740d5400715a80970442261a7",
+      "native_symbol": "_csblob_get_base_offset",
+      "evidence": "One of four accessors right after the matched _kern_config_is_development; the native kernel's csblob_get_base_offset, csblob_get_size and csblob_get_addr load +0x28, +0x40, +0x50 in that order, as these do (bsd/kern/ubc_subr.c). ldr x0, [x0, #0x28]."
+    },
+    {
+      "original": "0xfffffff00b0a2bf8",
+      "original_size": 12,
+      "original_sha256": "cc69ebf76870babe7c411c6192484957e0d33c8ac31e8007653d279554829f16",
+      "native_symbol": "_csblob_get_size",
+      "evidence": "One of four accessors right after the matched _kern_config_is_development; the native kernel's csblob_get_base_offset, csblob_get_size and csblob_get_addr load +0x28, +0x40, +0x50 in that order, as these do (bsd/kern/ubc_subr.c). ldr x0, [x0, #0x40]."
+    },
+    {
+      "original": "0xfffffff00b0a2c04",
+      "original_size": 12,
+      "original_sha256": "875ab0ba2d050f3b79837a6eb1fd33fbba22cfffcf10a560cbe17ea0ce5590fa",
+      "native_symbol": "_csblob_get_addr",
+      "evidence": "One of four accessors right after the matched _kern_config_is_development; the native kernel's csblob_get_base_offset, csblob_get_size and csblob_get_addr load +0x28, +0x40, +0x50 in that order, as these do (bsd/kern/ubc_subr.c). ldr x0, [x0, #0x50]."
+    },
+    {
+      "original": "0xfffffff00b0a2c10",
+      "original_size": 32,
+      "original_sha256": "84a8e4fedcc463f95b6313588355f1483969b79d660d459a970674a5b6f807e5",
+      "native_symbol": "_csblob_get_platform_binary",
+      "evidence": "One of four accessors right after the matched _kern_config_is_development; the native kernel's csblob_get_base_offset, csblob_get_size and csblob_get_addr load +0x28, +0x40, +0x50 in that order, as these do (bsd/kern/ubc_subr.c). blob ? blob->platform_binary (byte +0xdc in 13432, +0xac natively) : 0, the next accessor in ubc_subr.c."
     }
   ],
   "data": [
