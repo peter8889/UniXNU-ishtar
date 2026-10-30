@@ -1102,6 +1102,20 @@
       "original_sha256": "84a8e4fedcc463f95b6313588355f1483969b79d660d459a970674a5b6f807e5",
       "native_symbol": "_csblob_get_platform_binary",
       "evidence": "One of four accessors right after the matched _kern_config_is_development; the native kernel's csblob_get_base_offset, csblob_get_size and csblob_get_addr load +0x28, +0x40, +0x50 in that order, as these do (bsd/kern/ubc_subr.c). blob ? blob->platform_binary (byte +0xdc in 13432, +0xac natively) : 0, the next accessor in ubc_subr.c."
+    },
+    {
+      "original": "0xfffffff00b0df0b0",
+      "original_size": 288,
+      "original_sha256": "af1d50bff102eeaabdc122a072047d7ac2ae7ac971ca0b9418e36bbde3c9fceb",
+      "native_symbol": "_proc_getexecutablevnode",
+      "evidence": "bsd/kern/kern_proc.c ends the block before proc_gettty with proc_getexecutablevnode and proc_getexecutablevnode_noblock; this kernel has 288- and 240-byte functions there before the matched _proc_gettty. Takes proc_lock (casa on p_mlock at +0x58), reads the PAC-signed p_textvp (+0x538), references it, unlocks and returns the vnode or NULL. AMFI calls it from mac_proc_check_inherit_ipc_ports during launchd's exec (2026-10-30)."
+    },
+    {
+      "original": "0xfffffff00b0df1d0",
+      "original_size": 240,
+      "original_sha256": "0c13d5cf99a394be1e9deb30adae336c94acbb16160b742a0a0e292e0ca8278b",
+      "native_symbol": "_proc_getexecutablevnode_noblock",
+      "evidence": "bsd/kern/kern_proc.c ends the block before proc_gettty with proc_getexecutablevnode and proc_getexecutablevnode_noblock; this kernel has 288- and 240-byte functions there before the matched _proc_gettty. The second, shorter function of the pair. Called by sandbox."
     }
   ],
   "data": [
