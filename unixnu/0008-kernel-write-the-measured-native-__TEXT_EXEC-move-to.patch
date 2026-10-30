@@ -1,7 +1,7 @@
 From b5c66901d49d40ec2c4011427ced3dccd7480531 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Fri, 30 Oct 2026 11:52:15 +0100
-Subject: [PATCH 8/8] kernel: write the measured native __TEXT_EXEC move to
+Subject: [PATCH 8/9] kernel: write the measured native __TEXT_EXEC move to
  native-slide after prelink
 
 build-gop-legacy-display-27.py and build-adreno740-accelerator.py subtract

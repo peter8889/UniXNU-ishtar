@@ -1,7 +1,7 @@
 From 74320edd8adb8b09eaa990cefd16be248bb10ff6 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 22:08:06 +0100
-Subject: [PATCH 4/8] components: follow the feat/ipados27-gpu-parity heads
+Subject: [PATCH 4/9] components: follow the feat/ipados27-gpu-parity heads
  (2026-10-29)
 
 The catalog revisions are what "unixnu fetch" clones when a driver

@@ -1,0 +1,31 @@
+From 802092c0f345b2051fca68b9930f8b226fbe2628 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Fri, 30 Oct 2026 12:58:40 +0100
+Subject: [PATCH 9/9] seed-data-skip-setup: read only the superblock magic, not
+ the whole raw seed
+
+raw.read_bytes() loaded the expanded seed into memory to check four bytes;
+with a seed grown to the userdata partition (ishtar: 206 GiB) the process
+was SIGKILLed after the edit and no payload was written.
+
+Change-Id: Iab32b9c920a47c70a0c5f2b5095f04bd24d51e94
+---
+ scripts/seed-data-skip-setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/seed-data-skip-setup.py b/scripts/seed-data-skip-setup.py
+index c28b6a6..e3c20b7 100755
+--- a/scripts/seed-data-skip-setup.py
++++ b/scripts/seed-data-skip-setup.py
+@@ -92,7 +92,7 @@ def main():
+                     print('mkdir', d.relative_to(mount))
+         finally:
+             subprocess.run(['hdiutil', 'detach', device], check=True)
+-        if raw.read_bytes()[32:36] != b'NXSB':
++        if raw.open('rb').read(36)[32:36] != b'NXSB':
+             sys.exit('The edited image is no APFS container any more')
+         metadata = packed_ramdisk.pack(raw, output)
+     report = dict(base_sha256=packed_ramdisk.inspect(base)[0]['sha256'], output=metadata,
+-- 
+2.56.0
+
