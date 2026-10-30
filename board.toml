@@ -59,6 +59,9 @@
 "title" = "iOS 27"
 "dram_size" = "0x80000000"
 "skip_setup_tool" = "scripts/seed-data-skip-setup.py"
+# The tool defaults to iPadOS 17 (21H461): LastSystemVersion must be this IPSW's build or iOS 27 runs the data migration
+# ("Swipe up to upgrade", 2026-10-30). --no-auto-dim keeps the panel on with no buttons yet.
+"skip_setup_args" = ["--build=24A446", "--no-auto-dim"]
 "panic_screen" = true
 # Stage 0: sheng's minimal iOS 26/27 arguments plus the UFS root. Board input (ishtar-touch, ishtar-keys) and the
 # offline-legacy-* display arguments are added with their stages.
