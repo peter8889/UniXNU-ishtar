@@ -1,7 +1,7 @@
 From ca8ac0b3649f390822571371b6457d52eebd6d60 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 13:24:13 +0100
-Subject: [PATCH 1/9] profiles: ios-27.0.1-24A446 (iPhone17,2 D94AP)
+Subject: [PATCH 01/13] profiles: ios-27.0.1-24A446 (iPhone17,2 D94AP)
 
 Same build, kernel source and OS series as ipados-27.0.1-24A446. iPhone17,2
 IPSW, kernelcache pin, prelink roots (no IOHIDEventDriver bundle on iPhone),
@@ -205,5 +205,5 @@ index 0000000..a355759
 +[payload.adt]
 +root_match_volume_uuid = "REQUIRED_OS_VOLUME_UUID"
 -- 
-2.56.0
+2.39.5 (Apple Git-154)
 

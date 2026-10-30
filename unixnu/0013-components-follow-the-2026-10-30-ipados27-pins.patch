@@ -1,0 +1,62 @@
+From f8ae7a73bcdbd2baefdd9f60d87acdeb97d0d0a0 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Fri, 30 Oct 2026 15:01:03 +0100
+Subject: [PATCH 13/13] components: follow the 2026-10-30 ipados27 pins
+
+Catalog revisions follow the driver gitlinks of upstream feat/ipados27-gpu-parity
+88604d0 and sheng 5b7d83c's ShengUfs:
+
+Adreno740 c0a2f392, AdrenoMetal 278333f4, GopFramebuffer 4975bc84,
+ShengUfs 78c93b09 (display bank TCR2 SEP so IOVAs with bit 31 translate).
+
+The component heads are one commit further (Adreno740 7cbe6e0, AdrenoMetal
+8c7297e, GopFramebuffer ff091ad, all 21:52); not taken: GopFramebuffer's
+grows native_legacy_direct from 23 to 38 words and sheng's BootLog.c still
+reads the 23-word layout.
+---
+ components.toml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/components.toml b/components.toml
+index 4cb9632..73f562b 100644
+--- a/components.toml
++++ b/components.toml
+@@ -83,7 +83,7 @@ kind = "driver"
+ function = "A740 kernel GPU driver"
+ scope = "gpu"
+ repository = "https://github.com/UniXNU/Adreno740.git"
+-revision = "c66357f2135542cd32cd72861007e0823e453ac8"
++revision = "c0a2f392a49b7363b26811189cb62d7d0f9e4b8a"
+ path = "drivers/Adreno740"
+ hardware = ["Adreno 740", "SM8550"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -105,7 +105,7 @@ kind = "driver"
+ function = "Metal frontend through metal2vulkan and Turnip"
+ scope = "graphics"
+ repository = "https://github.com/UniXNU/AdrenoMetal.git"
+-revision = "547312cf58156f7abe5f83a3376a14f5cb157884"
++revision = "278333f4a5c8c026dec8e8c277c741c0d909cc77"
+ path = "drivers/AdrenoMetal"
+ hardware = ["Turnip Darwin backend", "kernel GPU user-client ABI"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -126,7 +126,7 @@ kind = "driver"
+ function = "SM8550 UFS transport and sheng persistent storage"
+ scope = "board"
+ repository = "https://github.com/UniXNU/ShengUfs.git"
+-revision = "fab07fcc871acb0777f083296f9ebea6cc76d6c4"
++revision = "78c93b0941896e0515c6abaad3ff0d88b50a78ca"
+ path = "drivers/ShengUfs"
+ hardware = ["SM8550 UFS controller"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -211,7 +211,7 @@ kind = "driver"
+ function = "UEFI GOP framebuffer and MobileFramebuffer integration"
+ scope = "display"
+ repository = "https://github.com/UniXNU/GopFramebuffer.git"
+-revision = "90b64efcdbf43edbc40a66f14bdb8a97a07a12ae"
++revision = "4975bc84eb87e16d629125dcffb30cc30dfd2d86"
+ path = "drivers/GopFramebuffer"
+ hardware = ["UEFI GOP framebuffer"]
+ os_abi = ["ipados-17.7.11-21H461", "ipados-27.0.1-24A446"]
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,7 +1,7 @@
 From 74320edd8adb8b09eaa990cefd16be248bb10ff6 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 22:08:06 +0100
-Subject: [PATCH 4/9] components: follow the feat/ipados27-gpu-parity heads
+Subject: [PATCH 04/13] components: follow the feat/ipados27-gpu-parity heads
  (2026-10-29)
 
 The catalog revisions are what "unixnu fetch" clones when a driver
@@ -146,5 +146,5 @@ index 9edbe61..547312c 160000
 -Subproject commit 9edbe61cf2bd2273730d64eec11c23f40db8f57d
 +Subproject commit 547312cf58156f7abe5f83a3376a14f5cb157884
 -- 
-2.56.0
+2.39.5 (Apple Git-154)
 

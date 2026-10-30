@@ -1,0 +1,319 @@
+From ef3f720319e6eb4ee141c800ad3bad394a904672 Mon Sep 17 00:00:00 2001
+From: bluseliu50 <265648257+bluseliu50@users.noreply.github.com>
+Date: Fri, 30 Oct 2026 05:10:44 +0800
+Subject: [PATCH 10/13] build: add the fileset reference, trust, addon and
+ pipeline-pack tools
+
+(cherry picked from commit 9bfc45a7d77109f629eba466d343becd136188de)
+---
+ profiles/os/ipados-27.0.1-24A446/profile.toml |  2 +-
+ scripts/addon-add-dir.py                      | 58 ++++++++++++++++++
+ scripts/build-fileset-release-reference.py    | 60 +++++++++++++++++++
+ scripts/bundle-ipsw-trust.py                  | 47 +++++++++++++++
+ scripts/make-gpu-addon.py                     |  2 +-
+ scripts/make-m2vpack.py                       | 19 ++++++
+ scripts/trust-append-module.py                | 24 ++++++++
+ scripts/turnip-kmd-patch.py                   | 22 +++++++
+ 8 files changed, 232 insertions(+), 2 deletions(-)
+ create mode 100644 scripts/addon-add-dir.py
+ create mode 100644 scripts/build-fileset-release-reference.py
+ create mode 100644 scripts/bundle-ipsw-trust.py
+ create mode 100644 scripts/make-m2vpack.py
+ create mode 100644 scripts/trust-append-module.py
+ create mode 100644 scripts/turnip-kmd-patch.py
+
+diff --git a/profiles/os/ipados-27.0.1-24A446/profile.toml b/profiles/os/ipados-27.0.1-24A446/profile.toml
+index 4dcaf41..a0a2561 100644
+--- a/profiles/os/ipados-27.0.1-24A446/profile.toml
++++ b/profiles/os/ipados-27.0.1-24A446/profile.toml
+@@ -34,7 +34,7 @@
+ # The AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0; the kernel patch calls it early.
+ "early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffe00092551ac"
+ # Bring-up: match against the symbol-bearing RELEASE build of the same XNU source
+-# (local-tools/build-fileset-release-reference.py --lto) and send unmatched calls to the
++# (scripts/build-fileset-release-reference.py --lto) and send unmatched calls to the
+ # reporting stub of fileset-unmapped-call.patch.
+ "extra_args" = ["--fileset-reference", "build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf", "--allow-missing"]
+ "roots" = ["com.apple.AppleFSCompression.AppleFSCompressionTypeZlib", "com.apple.driver.AppleARMPlatform", "com.apple.driver.AppleARMWatchdogTimer", "com.apple.driver.AppleAudioClockLibs", "com.apple.driver.AppleEffaceableStorage", "com.apple.driver.AppleIISController", "com.apple.driver.AppleM2ScalerCSCDriver", "com.apple.driver.AppleMobileFileIntegrity", "com.apple.driver.ApplePMGR", "com.apple.driver.IODARTFamily", "com.apple.filesystems.apfs", "com.apple.iokit.CoreAnalyticsFamily", "com.apple.iokit.IOAVFamily", "com.apple.iokit.IOAudio2Family", "com.apple.iokit.IOCECFamily", "com.apple.iokit.IOCryptoAcceleratorFamily", "com.apple.iokit.IOGPUFamily", "com.apple.iokit.IOHDCPFamily", "com.apple.iokit.IOMobileGraphicsFamily", "com.apple.iokit.IOReportFamily", "com.apple.iokit.IOSlowAdaptiveClockingFamily", "com.apple.iokit.IOStorageFamily", "com.apple.iokit.IOSurface", "com.apple.kec.Libm", "com.apple.kec.corecrypto", "com.apple.kext.AppleMatch", "com.apple.kext.CoreTrust", "com.apple.security.AppleImage4", "com.apple.security.sandbox", "com.apple.iokit.IOHIDFamily", "com.apple.iokit.IOHIDEventDriver"]
+diff --git a/scripts/addon-add-dir.py b/scripts/addon-add-dir.py
+new file mode 100644
+index 0000000..97626c5
+--- /dev/null
++++ b/scripts/addon-add-dir.py
+@@ -0,0 +1,58 @@
++#!/usr/bin/env python3
++"""Copy a GPU addon (NGPUADD2, see UniXNU scripts/make-gpu-addon.py) and add the files of DIR below PREFIX.
++usage: addon-add-dir.py IN.bin OUT.bin PREFIX DIR [PREFIX DIR ...]   (executables keep 0755, the rest 0644)"""
++import os
++import struct
++import sys
++import zlib
++from pathlib import Path
++
++
++def pad(b):
++    return b + bytes(-len(b) % 8)
++
++
++def read(path):
++    data = Path(path).read_bytes()
++    assert data[:8] == b'NGPUADD2', 'not an addon'
++    count = struct.unpack_from('<I', data, 8)[0]
++    at, files = 24, []
++    for _ in range(count):
++        plen, mode, size, packed = struct.unpack_from('<IIQQ', data, at)
++        at += 24
++        name = data[at:at + plen - 1].decode()
++        at += (plen + 7) & ~7
++        body = zlib.decompress(data[at:at + packed])
++        assert len(body) == size
++        at += (packed + 7) & ~7
++        files.append((name, mode, body))
++    return files
++
++
++def write(path, files):
++    out = b''
++    for name, mode, body in files:
++        raw = name.encode() + b'\0'
++        assert len(raw) <= 160, name
++        packed = zlib.compress(body, 9)
++        out += struct.pack('<IIQQ', len(raw), mode, len(body), len(packed)) + pad(raw) + pad(packed)
++    blob = b'NGPUADD2' + struct.pack('<IIQ', len(files), 0, 24 + len(out)) + out
++    Path(path).write_bytes(blob)
++
++
++def main():
++    if len(sys.argv) < 5 or len(sys.argv) % 2 == 0:
++        sys.exit(__doc__)
++    files = read(sys.argv[1])
++    for prefix, directory in zip(sys.argv[3::2], sys.argv[4::2]):
++        base = Path(directory)
++        for p in sorted(x for x in base.rglob('*') if x.is_file()):
++            name = prefix.rstrip('/') + '/' + p.relative_to(base).as_posix()
++            mode = 0o755 if os.access(p, os.X_OK) else 0o644
++            files = [f for f in files if f[0] != name] + [(name, mode, p.read_bytes())]
++    write(sys.argv[2], files)
++    assert [f[0] for f in read(sys.argv[2])] == [f[0] for f in files]
++    print(f'{sys.argv[2]}: {len(files)} files')
++
++
++main()
+diff --git a/scripts/build-fileset-release-reference.py b/scripts/build-fileset-release-reference.py
+new file mode 100644
+index 0000000..247541c
+--- /dev/null
++++ b/scripts/build-fileset-release-reference.py
+@@ -0,0 +1,60 @@
++#!/usr/bin/env python3
++"""Build a symbol-bearing RELEASE comparison kernel in an isolated output tree."""
++import json
++import os
++import shutil
++import hashlib
++import argparse
++from pathlib import Path
++import subprocess
++
++repo = Path(__file__).resolve().parents[1]
++parser = argparse.ArgumentParser(description=__doc__)
++parser.add_argument('--lto', action='store_true', help='enable the RELEASE default link-time optimization')
++options = parser.parse_args()
++mode = 'lto' if options.lto else 'snapshot'
++root = repo / 'out/sheng/ipados-26.5.2-23F84/sheng_ipados26/tree'
++output = root / 'build/xnu/fileset-reference'
++output.mkdir(parents=True, exist_ok=True)
++source = output / 'source'
++if not source.exists():
++    shutil.copytree(root/'.cache/xnu-work', source, symlinks=True,
++                    ignore=shutil.ignore_patterns('.git'))
++    # The shared tree currently has this observation hook at file scope. The
++    # reference build disables observation hooks; repair only its private copy.
++    sleh = source / 'osfmk/arm64/sleh.c'
++    text = sleh.read_text()
++    misplaced = '\n\tboot_progress_user_breakpoint(state, esr);\n#if __has_feature(ptrauth_calls)'
++    if misplaced in text:
++        sleh.write_text(text.replace(misplaced, '\n#if __has_feature(ptrauth_calls)', 1))
++    manifest = {str(p.relative_to(source)): hashlib.sha256(p.read_bytes()).hexdigest()
++                for p in source.rglob('*') if p.is_file()}
++    (output/'source-sha256.json').write_text(json.dumps(manifest,indent=2)+'\n')
++sdk = root / '.cache/fakeroot'
++archives = [root/'build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a']
++forced = [root/f'build/{folder}/{name}' for folder,name in (
++    ('libpthread-kernel','libpthread_kernel.a'),('armdt-platform','libArmDTPlatform.a'),('armcpu','libArmCpu.a'))]
++assert all(p.is_file() for p in archives+forced)
++env = dict(os.environ, KERNEL_SDKROOT=str(sdk),
++           XNU_AVAILABILITY_PL=str(sdk/'usr/local/libexec/availability.pl'))
++flags = '-Wno-reserved-identifier -Wno-pre-c11-compat -Wno-missing-designated-field-initializers -Wno-suggest-override -Wno-unnecessary-virtual-specifier -Wno-suggest-destructor-override -Wno-ms-bitfield-padding -DXNU_NATIVE_PAN=1 -DXNU_SOURCE_CORECRYPTO14=1 -DXNU_BOOT_PROGRESS=0'
++args = ['make','-C',str(source),'build','SDKROOT=iphoneos',
++    'ARCH_CONFIGS=ARM64','MACHINE_CONFIGS=BCM2837','KERNEL_CONFIGS=RELEASE',
++    'ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64e','LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY',
++    'ARM64_LINK_ADDR=0xfffffff007004000','ARM64_PLKSEG_ADDR=0xfffffff004004000',
++    'DEPLOYMENT_TARGET_FLAGS=-miphoneos-version-min=26.0 -DXNU_TARGET_OS_IOS',
++    'DEPLOYMENT_LINKER_FLAGS=-Wl,-ios_version_min,26.0',
++    'RC_DARWIN_KERNEL_VERSION=25.5.0','RC_ProjectSourceVersion=12377.121.6',
++    f'BUILD_LTO={int(options.lto)}','BOUND_CHECKS=0','BUILD_WERROR=0','MAKEJOBS=-j8',
++    'LDFLAGS_KERNEL_LTO=-miphoneos-version-min=26.0 -Wl,-mllvm,-inline-threshold=100',
++    f'CFLAGS_EXTRA={flags}',
++    'copyio.o_CFLAGS_ADD=-march=armv8.1-a','pcb.o_CFLAGS_ADD=-march=armv8.1-a',
++    'LD_KERNEL_ARCHIVES='+' '.join([f'-L{sdk}/usr/local/lib/kernel','-lfirehose_kernel',
++                                    *map(str,archives),*(f'-Wl,-force_load,{p}' for p in forced)]),
++    'XNU_EXTERNAL_KERNEL_ARCHIVES='+' '.join(map(str,archives+forced)),
++    f'OBJROOT={output}/{mode}-obj',f'SYMROOT={output}/{mode}-sym',f'DSTROOT={output}/{mode}-dst']
++(output/f'{mode}-command.json').write_text(json.dumps(args,indent=2)+'\n')
++with (output/f'{mode}-build.log').open('w') as log:
++    result = subprocess.run(args,cwd=root,env=env,stdout=log,stderr=subprocess.STDOUT)
++print('RELEASE reference exit',result.returncode,'log',output/f'{mode}-build.log',flush=True)
++raise SystemExit(result.returncode)
+diff --git a/scripts/bundle-ipsw-trust.py b/scripts/bundle-ipsw-trust.py
+new file mode 100644
+index 0000000..c762568
+--- /dev/null
++++ b/scripts/bundle-ipsw-trust.py
+@@ -0,0 +1,47 @@
++#!/usr/bin/env python3
++"""bundle-ipsw-trust.py OUT STATIC [MORE ...]: bundle unchanged IPSW trust caches for DarwinBoot.
++
++Each input is an IM4P (or a raw module). Module 0 is the static trust cache; the kernel loads later ones
++as engineering modules. Modules are copied byte for byte and must be exact version-2 modules."""
++import hashlib, json, struct, sys
++from pathlib import Path
++
++
++def der(data, at):
++    tag, size = data[at:at + 2]; at += 2
++    if size & 128:
++        n = size & 127; size = int.from_bytes(data[at:at + n], 'big'); at += n
++    if at + size > len(data):
++        raise SystemExit('DER exceeds input')
++    return tag, data[at:at + size], at + size
++
++
++def module(path):
++    data = Path(path).read_bytes()
++    if data[:1] == b'\x30':
++        tag, seq, end = der(data, 0)
++        fields, at = [], 0
++        while at < len(seq):
++            kind, value, at = der(seq, at); fields.append((kind, value))
++        if fields[0][1] != b'IM4P' or fields[3][0] != 4:
++            raise SystemExit(f'{path}: not an IM4P')
++        data = fields[3][1]
++    version, = struct.unpack_from('<I', data)
++    count, = struct.unpack_from('<I', data, 20)
++    if version != 2 or len(data) != 24 + count * 24:
++        raise SystemExit(f'{path}: not an exact version-2 trust module (version {version}, {len(data)} bytes)')
++    return data, count
++
++
++out, inputs = sys.argv[1], sys.argv[2:]
++modules = [module(p) for p in inputs]
++header = 4 + 4 * len(modules)
++offsets, cursor = [], header
++for data, _ in modules:
++    offsets.append(cursor); cursor += len(data)
++bundle = struct.pack(f'<{1 + len(modules)}I', len(modules), *offsets) + b''.join(d for d, _ in modules)
++Path(out).write_bytes(bundle)
++Path(out + '.json').write_text(json.dumps({'inputs': [str(Path(p).resolve()) for p in inputs],
++    'entries': [c for _, c in modules], 'modules_sha256': [hashlib.sha256(d).hexdigest() for d, _ in modules],
++    'bundle_sha256': hashlib.sha256(bundle).hexdigest(), 'modified': False}, indent=2) + '\n')
++print(out, len(bundle), 'bytes', [c for _, c in modules])
+diff --git a/scripts/make-gpu-addon.py b/scripts/make-gpu-addon.py
+index 9df7ffd..6ccd488 100644
+--- a/scripts/make-gpu-addon.py
++++ b/scripts/make-gpu-addon.py
+@@ -69,7 +69,7 @@ def main():
+         pipeline_pack = Path(args[at + 1])
+         del args[at:at + 2]
+         if pipeline_pack.read_bytes()[:8] != b'SHEXP001':
+-            sys.exit('--pipeline-pack takes a SHEXP001 pack (local-tools/make-m2vpack.py)')
++            sys.exit('--pipeline-pack takes a SHEXP001 pack (scripts/make-m2vpack.py)')
+     if len(args) != 1:
+         sys.exit(__doc__)
+     output = Path(args[0]).resolve()
+diff --git a/scripts/make-m2vpack.py b/scripts/make-m2vpack.py
+new file mode 100644
+index 0000000..c77c0ab
+--- /dev/null
++++ b/scripts/make-m2vpack.py
+@@ -0,0 +1,19 @@
++#!/usr/bin/env python3
++"""Merge pipeline-cache exports (read-sheng-log.py run dirs: <run>/export/manifest.json + files/) into one SHEXP001 pack for
++make-gpu-addon.py --pipeline-pack. Later directories win on equal paths. usage: make-m2vpack.py OUT EXPORT_DIR..."""
++import json, struct, sys, zlib
++from pathlib import Path
++out, dirs = Path(sys.argv[1]), [Path(d) for d in sys.argv[2:]]
++merged, root = {}, '/'
++for d in dirs:
++    m = json.loads((d / 'manifest.json').read_text())
++    root = m['directory']
++    for f in m['files']:
++        merged[f['path']] = (f['mode'], f['uid'], f['gid'], (d / 'files' / f['path']).read_bytes())
++stream = bytearray(b'M2VCACH1' + struct.pack('<I', len(root.encode())) + root.encode() + struct.pack('<I', len(merged)))
++for path, (mode, uid, gid, data) in sorted(merged.items()):
++    pb = path.encode()
++    stream += struct.pack('<IIIIQ', len(pb), mode, uid, gid, len(data)) + pb + data
++z = zlib.compress(bytes(stream), 6)
++out.write_bytes(b'SHEXP001' + struct.pack('<II', len(stream), len(z)) + z)
++print(f'{out}: {len(merged)} files, {len(stream)} bytes, {len(z)} compressed')
+diff --git a/scripts/trust-append-module.py b/scripts/trust-append-module.py
+new file mode 100644
+index 0000000..63d2662
+--- /dev/null
++++ b/scripts/trust-append-module.py
+@@ -0,0 +1,24 @@
++#!/usr/bin/env python3
++"""trust-append-module.py IN OUT CDHASH [CDHASH ...]: copy a trust bundle (bundle-ipsw-trust.py layout) and append one version-2
++module with the given CDHashes (hash type 2). The IPSW modules stay byte for byte; the kernel loads the new one as an engineering module."""
++import struct
++import sys
++import uuid
++from pathlib import Path
++
++if len(sys.argv) < 4:
++    sys.exit(__doc__)
++data = Path(sys.argv[1]).read_bytes()
++count = struct.unpack_from('<I', data)[0]
++starts = list(struct.unpack_from(f'<{count}I', data, 4)) + [len(data)]
++modules = [data[starts[i]:starts[i + 1]] for i in range(count)]
++hashes = sorted({bytes.fromhex(h) for h in sys.argv[3:]})
++assert all(len(h) == 20 for h in hashes), 'CDHashes are 20 bytes'
++ident = uuid.uuid5(uuid.NAMESPACE_URL, 'org.unixnu.owner:' + ''.join(h.hex() for h in hashes)).bytes
++modules.append(struct.pack('<I16sI', 2, ident, len(hashes)) + b''.join(h + bytes([2, 0, 0, 0]) for h in hashes))
++cursor, offsets = 4 + 4 * len(modules), []
++for m in modules:
++    offsets.append(cursor)
++    cursor += len(m)
++Path(sys.argv[2]).write_bytes(struct.pack(f'<{len(modules) + 1}I', len(modules), *offsets) + b''.join(modules))
++print(f'{sys.argv[2]}: {count} -> {len(modules)} modules, last has {len(hashes)} hashes')
+diff --git a/scripts/turnip-kmd-patch.py b/scripts/turnip-kmd-patch.py
+new file mode 100644
+index 0000000..ecfb156
+--- /dev/null
++++ b/scripts/turnip-kmd-patch.py
+@@ -0,0 +1,22 @@
++#!/usr/bin/env python3
++"""Edit the new-file hunk of turnip-darwin-kmd.patch as a real file: `extract OUT.cc` and `inject IN.cc` (rewrites the hunk header)."""
++import re, sys
++from pathlib import Path
++PATCH = str(Path(__file__).resolve().parents[1] / 'patches/mesa/turnip-darwin-kmd.patch')
++HEAD = 'diff --git a/src/freedreno/vulkan/tu_knl_darwin.cc b/src/freedreno/vulkan/tu_knl_darwin.cc\n'
++p = open(PATCH).read()
++a = p.index(HEAD)
++m = re.search(r'^@@ -0,0 \+1,(\d+) @@\n', p[a:], re.M)
++start = a + m.end()
++n = int(m.group(1))
++lines = p[start:].split('\n')
++body = lines[:n]
++assert all(l.startswith('+') for l in body)
++rest_start = start + sum(len(l) + 1 for l in body)
++if sys.argv[1] == 'extract':
++    open(sys.argv[2], 'w').write('\n'.join(l[1:] for l in body) + '\n')
++else:
++    text = open(sys.argv[2]).read().rstrip('\n').split('\n')
++    new = ''.join('+' + l + '\n' for l in text)
++    out = p[:a + m.start()] + '@@ -0,0 +1,%d @@\n' % len(text) + new + p[rest_start:]
++    open(PATCH, 'w').write(out)
+-- 
+2.39.5 (Apple Git-154)
+

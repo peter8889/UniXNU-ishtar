@@ -1,8 +1,8 @@
 From 802092c0f345b2051fca68b9930f8b226fbe2628 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Fri, 30 Oct 2026 12:58:40 +0100
-Subject: [PATCH 9/9] seed-data-skip-setup: read only the superblock magic, not
- the whole raw seed
+Subject: [PATCH 09/13] seed-data-skip-setup: read only the superblock magic,
+ not the whole raw seed
 
 raw.read_bytes() loaded the expanded seed into memory to check four bytes;
 with a seed grown to the userdata partition (ishtar: 206 GiB) the process
@@ -27,5 +27,5 @@ index c28b6a6..e3c20b7 100755
          metadata = packed_ramdisk.pack(raw, output)
      report = dict(base_sha256=packed_ramdisk.inspect(base)[0]['sha256'], output=metadata,
 -- 
-2.56.0
+2.39.5 (Apple Git-154)
 

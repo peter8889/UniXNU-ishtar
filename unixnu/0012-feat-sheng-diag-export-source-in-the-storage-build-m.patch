@@ -1,0 +1,60 @@
+From 8109216399ef16168f0968ac6122b9cf0ccde2fb Mon Sep 17 00:00:00 2001
+From: rpone <rponeawa@qq.com>
+Date: Fri, 30 Oct 2026 19:34:51 +0800
+Subject: [PATCH 12/13] feat(sheng): diag export source in the storage build;
+ module pointers for the BGRA, contiguous BO and direct scanout work
+
+(cherry picked from commit 88604d01c191727bf4b4113269b3a9518bb730d3)
+---
+ drivers/Adreno740                     | 2 +-
+ drivers/AdrenoMetal                   | 2 +-
+ drivers/GopFramebuffer                | 2 +-
+ scripts/build-sheng-source-storage.py | 4 +++-
+ 4 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/Adreno740 b/drivers/Adreno740
+index c66357f..c0a2f39 160000
+--- a/drivers/Adreno740
++++ b/drivers/Adreno740
+@@ -1 +1 @@
+-Subproject commit c66357f2135542cd32cd72861007e0823e453ac8
++Subproject commit c0a2f392a49b7363b26811189cb62d7d0f9e4b8a
+diff --git a/drivers/AdrenoMetal b/drivers/AdrenoMetal
+index 7183e58..278333f 160000
+--- a/drivers/AdrenoMetal
++++ b/drivers/AdrenoMetal
+@@ -1 +1 @@
+-Subproject commit 7183e58842200740c59c4f77854efa66d8129ddf
++Subproject commit 278333f4a5c8c026dec8e8c277c741c0d909cc77
+diff --git a/drivers/GopFramebuffer b/drivers/GopFramebuffer
+index 90b64ef..4975bc8 160000
+--- a/drivers/GopFramebuffer
++++ b/drivers/GopFramebuffer
+@@ -1 +1 @@
+-Subproject commit 90b64efcdbf43edbc40a66f14bdb8a97a07a12ae
++Subproject commit 4975bc84eb87e16d629125dcffb30cc30dfd2d86
+diff --git a/scripts/build-sheng-source-storage.py b/scripts/build-sheng-source-storage.py
+index 8c82e64..e2de8ea 100644
+--- a/scripts/build-sheng-source-storage.py
++++ b/scripts/build-sheng-source-storage.py
+@@ -166,7 +166,7 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
+     c = json.loads((obj / 'osfmk/DEVELOPMENT/startup.o.json').read_text().strip().rstrip(','))
+     # BSD sources (sys/proc.h, the system calls) take kern_exec's flags.
+     bsd = json.loads((obj / 'bsd/DEVELOPMENT/kern_exec.o.json').read_text().strip().rstrip(','))
+-    bsd_sources = {'BootWatchdogPolicy.c'}
++    bsd_sources = {'BootWatchdogPolicy.c', 'BootDiagExport.c'}
+     includes = ['-I', str(out / 'headers/include'), '-I', str(ROOT / 'kits/VerifiedRoot/include'),
+                 '-I', str(ROOT / 'drivers/VirtioMmioBlock'), '-I', str(tree / '.cache/xnu-work/osfmk')]
+     flags = ['-DNATIVE_UFS_SOURCE_API=1', '-DNATIVE_VERIFIED_BLOCK=1',
+@@ -186,6 +186,8 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
+         # The launchd job policy (sheng-disable-watchdogd, sheng-lite, sheng-disable-jobs, sheng-setup) that BootProgress carries on
+         # iPadOS 17; the kernel runs it after the Data mount.
+         sources.append(device_source('BootWatchdogPolicy.c'))
++        # The diagnostic file export (sheng-diag-export): the unified log, crash reports and a screenshot, read through the VFS.
++        sources.append(device_source('BootDiagExport.c'))
+     objects, inputs = [], {}
+     objcopy = shutil.which('llvm-objcopy') or '/opt/homebrew/opt/llvm/bin/llvm-objcopy'
+     for source in sources:
+-- 
+2.39.5 (Apple Git-154)
+

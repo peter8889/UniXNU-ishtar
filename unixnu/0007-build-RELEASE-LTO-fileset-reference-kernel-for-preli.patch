@@ -1,7 +1,7 @@
 From b68a2caa064667bfeb35f9636ddf506f39b26664 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Fri, 30 Oct 2026 00:24:26 +0100
-Subject: [PATCH 7/9] build: RELEASE+LTO fileset reference kernel for prelink
+Subject: [PATCH 07/13] build: RELEASE+LTO fileset reference kernel for prelink
 
 The kernel step builds the --fileset-reference kernel the OS profile names
 (UNIXNU_FILESET_REFERENCE): the same tree as RELEASE+LTO, without the board's
@@ -108,5 +108,5 @@ index 15ab67c..4d5604e 100644
          env['UNIXNU_BOARD_KIT'] = ctx.board.get('board', {}).get('kit', ctx.name)
          env['UNIXNU_XNU_ARCH'] = load_toml(ctx.profile_roots['arch'] / 'profile.toml').get('arch', {}).get('name', 'arm64')
 -- 
-2.56.0
+2.39.5 (Apple Git-154)
 

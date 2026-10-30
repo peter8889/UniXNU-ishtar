@@ -1,0 +1,21 @@
+From 6b196008c8ab193a9829e1129b2d54073192e732 Mon Sep 17 00:00:00 2001
+From: rpone <rponeawa@qq.com>
+Date: Fri, 30 Oct 2026 11:05:42 +0800
+Subject: [PATCH 11/13] chore(metal): bump AdrenoMetal for the frame histograms
+ and per-function priming
+
+(cherry picked from commit 310fb75edd53fff5f432066d858dd0ae9403a521)
+---
+ drivers/AdrenoMetal | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/AdrenoMetal b/drivers/AdrenoMetal
+index 547312c..7183e58 160000
+--- a/drivers/AdrenoMetal
++++ b/drivers/AdrenoMetal
+@@ -1 +1 @@
+-Subproject commit 547312cf58156f7abe5f83a3376a14f5cb157884
++Subproject commit 7183e58842200740c59c4f77854efa66d8129ddf
+-- 
+2.39.5 (Apple Git-154)
+

@@ -10,7 +10,7 @@ commit = "e31e90a24c27ad6cbe981650d12a1a4124065b03"
 commit = "7edb88fbae296fb7c8ce2f64e115e116e566d51c"
 
 [source."ShengUfs"]
-commit = "fab07fcc871acb0777f083296f9ebea6cc76d6c4"
+commit = "78c93b0941896e0515c6abaad3ff0d88b50a78ca"
 
 [source."corecrypto-2023"]
 commit = "11fba65b12d8830630e248dfa8344caf8b065f26"
