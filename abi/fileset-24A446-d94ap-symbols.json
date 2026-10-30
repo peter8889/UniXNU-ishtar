@@ -978,6 +978,42 @@
       "native_symbol": "__ZN12IOUserClient9metaClassE",
       "addend": 0,
       "evidence": "Constant slot whose only pointer is IOUserClient::gMetaClass; AppleARMPlatform loads it through its GOT. Source: iokit/Kernel/IOUserClient.cpp. [Addresses in this text are from kernelcache 38e6d9fa; the fields above were ported to fa07057b by scripts/kc-port.py.] Ported from iPad17,3 38e6d9fa by UniXNU-ishtar scripts/kc-port.py (masked code verified)."
+    },
+    {
+      "original": "0xfffffff00b70cff0",
+      "native_symbol": "_vnop_kqfilt_add_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_kqfilt_add\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_kqfilt_add_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
+    },
+    {
+      "original": "0xfffffff00b70d030",
+      "native_symbol": "_vnop_kqfilt_remove_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_kqfilt_remove\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_kqfilt_remove_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
+    },
+    {
+      "original": "0xfffffff00b70d070",
+      "native_symbol": "_vnop_monitor_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_monitor\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_monitor_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
+    },
+    {
+      "original": "0xfffffff00b70d0b0",
+      "native_symbol": "_vnop_getnamedstream_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_getnamedstream\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_getnamedstream_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
+    },
+    {
+      "original": "0xfffffff00b70d0f0",
+      "native_symbol": "_vnop_makenamedstream_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_makenamedstream\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_makenamedstream_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
+    },
+    {
+      "original": "0xfffffff00b70d130",
+      "native_symbol": "_vnop_removenamedstream_desc",
+      "addend": 0,
+      "evidence": "struct vnodeop_desc whose vdesc_name (+8) points to the string \"vnop_removenamedstream\"; one of the 0x40-byte descriptors in the kernel __DATA run with vnop_compound_open .. vnop_removenamedstream. bsd/vfs/vnode_if.c vnop_removenamedstream_desc. APFS's vnode operation table references it (vfs_fsadd \"bad operation\" when unmapped)."
     }
   ],
   "sites": []
