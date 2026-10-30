@@ -25,7 +25,7 @@
 # Stage 0: no display binding and no A740 archives (their ABI records are iPad17,3; see porting.toml image-assembly).
 # Stage 1 adds "build-gop-legacy-display-27.py"; stage 3 adds "component:Adreno740", "build-adreno740-kits.py",
 # "build-adreno740-accelerator.py".
-"archives" = ["build-corecrypto-14.py", "build-corecrypto-14.py --namespace", "component:ArmDTPlatform", "component:ArmCpu", "build-libpthread-kernel.py", "component:ShengUfs", "component:RamBlock", "component:AppleKeyStoreState"]
+"archives" = ["build-corecrypto-14.py", "build-corecrypto-14.py --namespace", "component:ArmDTPlatform", "component:ArmCpu", "build-libpthread-kernel.py", "component:ShengUfs", "component:RamBlock", "component:AppleKeyStoreState", "build-gop-legacy-display-27.py"]
 "config_fragments" = ["arch:configs/common.config", "os:configs/ios.config"]
 # The SoC layer comes from this repo until UniXNU-sm8550-common publishes patches/xnu-12377/series.
 "patch_series" = ["arch:patches/xnu/series", "device:patches/xnu-12377/soc/series", "os:patches/xnu/series", "device:patches/xnu-12377/series"]
@@ -62,7 +62,9 @@
 "panic_screen" = true
 # Stage 0: sheng's minimal iOS 26/27 arguments plus the UFS root. Board input (ishtar-touch, ishtar-keys) and the
 # offline-legacy-* display arguments are added with their stages.
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "-no_slto_panic", "use_contiguous_hint=0", "native-source-storage=1", "native-ufs-root=1"]
+# Stage 1 adds sheng's display arguments (no touch, HID or buttons yet) with UI scale 3: 1440x3200 pixels are 480x1066 points,
+# near the iPhone 16 Pro Max's 440x956 @3x (sheng uses 2 on its tablet).
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "-no_slto_panic", "use_contiguous_hint=0", "native-source-storage=1", "native-ufs-root=1", "offline-mobile-graphics-load=1", "offline-mobile-graphics-client=1", "offline-legacy-register=1", "offline-legacy-gop=1", "offline-legacy-unit-scale=3", "offline-legacy-pm=1", "offline-legacy-validate=1", "offline-legacy-transfer=1", "offline-legacy-cpu-present=1", "offline-legacy-phase=4", "offline-key-events=1", "sheng-aks=1"]
 
 ["payload"."install"]
 "title" = "Install and boot"
