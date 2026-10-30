@@ -857,6 +857,13 @@
       "original_sha256": "964bde8ab9402cea559d37b4392e351f2ce9065ecd5d9339d68ed93421373201",
       "native_symbol": "_clock_get_uptime",
       "evidence": "(uint64_t *result): *result = CNTVCTSS_EL0 + the per-CPU timebase offset (the mach_absolute_time read); follows the matched _mach_continuous_time. Called by 8 kexts."
+    },
+    {
+      "original": "0xfffffff00ad467f0",
+      "original_size": 16,
+      "original_sha256": "3a0f9b045134fc64d495700a609b9b2260508eef534a4e6a2d0a97ba7e1ecd69",
+      "native_symbol": "_ml_get_cpu_count",
+      "evidence": "Returns the word at 0xfffffff007e1125c = topology_info + 4 (num_cpus): the matched _ml_get_max_cpu_number reads max_cpu_id (+8) at 0xfffffff007e11260, so the struct starts at 0xfffffff007e11258. osfmk/arm64/machine_routines.c ml_get_cpu_count; sits before the matched _ml_get_boot_cpu_number. AppleARMPlatform trap."
     }
   ],
   "data": [
