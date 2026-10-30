@@ -1123,6 +1123,13 @@
       "original_sha256": "eb157b027aa0b365512270e76efe7851b64182853623440d320dcdd89e4ceb6e",
       "native_symbol": "_csfg_get_teamid",
       "evidence": "(struct fileglob *fg): fg_ops type DTYPE_VNODE, vnode from fg_data, vnode_lock, VREG, v_ubcinfo (+0x78) -> cs_blobs (+0x50) -> returns the blob pointer at +0xb8. The cs_blob layout of 13432 is the native one shifted by +0x30 (platform_binary +0xdc vs +0xac), and the native csblob_get_teamid reads csb_teamid at +0x88: bsd/kern/ubc_subr.c csfg_get_teamid. AMFI calls it from mac_file_check_mmap, the first syscall path of launchd/dyld (2026-10-30)."
+    },
+    {
+      "original": "0xfffffff00abd0d50",
+      "original_size": 80,
+      "original_sha256": "8ec1eecfe1d351fd1282d894352b3657363bb72352c7a5b4fdc5b9cf1b2e7b68",
+      "native_symbol": "_kern_os_zfree",
+      "evidence": "(zone, addr): reads z_self/z_stats from the zone, z_elem_size (+0x34), bzeroes the element and b zfree_ext: zfree(zone, addr) as osfmk/kern/kalloc.c kern_os_zfree under STRICT_IOKIT_FREE; directly between the matched _krealloc_shared_data and _kern_os_typed_free, the source order. AMFI's OSEntitlements release reaches it from cs_blob_cleanup (fcntl F_ADDFILESIGS, 2026-10-30; trap x0 = a zone in kernel data)."
     }
   ],
   "data": [
