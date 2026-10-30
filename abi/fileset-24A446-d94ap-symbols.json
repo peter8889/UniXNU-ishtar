@@ -1116,6 +1116,13 @@
       "original_sha256": "0c13d5cf99a394be1e9deb30adae336c94acbb16160b742a0a0e292e0ca8278b",
       "native_symbol": "_proc_getexecutablevnode_noblock",
       "evidence": "bsd/kern/kern_proc.c ends the block before proc_gettty with proc_getexecutablevnode and proc_getexecutablevnode_noblock; this kernel has 288- and 240-byte functions there before the matched _proc_gettty. The second, shorter function of the pair. Called by sandbox."
+    },
+    {
+      "original": "0xfffffff00b0a3b50",
+      "original_size": 272,
+      "original_sha256": "eb157b027aa0b365512270e76efe7851b64182853623440d320dcdd89e4ceb6e",
+      "native_symbol": "_csfg_get_teamid",
+      "evidence": "(struct fileglob *fg): fg_ops type DTYPE_VNODE, vnode from fg_data, vnode_lock, VREG, v_ubcinfo (+0x78) -> cs_blobs (+0x50) -> returns the blob pointer at +0xb8. The cs_blob layout of 13432 is the native one shifted by +0x30 (platform_binary +0xdc vs +0xac), and the native csblob_get_teamid reads csb_teamid at +0x88: bsd/kern/ubc_subr.c csfg_get_teamid. AMFI calls it from mac_file_check_mmap, the first syscall path of launchd/dyld (2026-10-30)."
     }
   ],
   "data": [
