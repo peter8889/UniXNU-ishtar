@@ -1644,6 +1644,11 @@ static void writer(void *arg, wait_result_t result) {
   uint32_t diag_at = 0;
   if (&boot_diag_scan && &boot_diag_stream) PE_parse_boot_argn("sheng-diag-export", &diag_at, sizeof diag_at);
   uint32_t errors = 0;
+  // ishtar-show=<seconds of log time>: once then, panic with the newest progress rows and the tail of the kernel message buffer, so the
+  // panic screen shows how far user space got on a board without a display binding or a log reader (ishtar stage 0).
+  uint32_t show_at = 0;
+  PE_parse_boot_argn("ishtar-show", &show_at, sizeof show_at);
+  static char show_rows[700];
   boot_log_live = &h;
   boot_log_state = 2;
   for (;;) {
@@ -1652,8 +1657,27 @@ static void writer(void *arg, wait_result_t result) {
     // Text slot, then the message buffer, then the header that makes both visible.
     memset(boot_log_buffer, 0, LogSlotBlocks * LogBlock);
     compose((char *)boot_log_buffer, LogSlotBlocks * LogBlock, h.slots_written, now);
+    if (show_at && now >= show_at) {
+      size_t n = 0;
+      show_rows[0] = 0;
+      for (const char *line = (const char *)boot_log_buffer; *line && n < sizeof show_rows - 1;) {
+        const char *end = strchr(line, '\n');
+        size_t len = end ? (size_t)(end - line) : strlen(line);
+        if (!strncmp(line, "[spawn]", 7) || !strncmp(line, "[data]", 6) || !strncmp(line, "[cryptex os]", 12) || !strncmp(line, "[exc", 4)) {
+          size_t take = len < sizeof show_rows - 2 - n ? len : sizeof show_rows - 2 - n;
+          memcpy(show_rows + n, line, take); n += take; show_rows[n++] = '\n'; show_rows[n] = 0;
+        }
+        if (!end) break;
+        line = end + 1;
+      }
+    }
     ok &= native_ufs_log_write(LogSlotFirst + (uint64_t)(h.slots_written % slot_count) * LogSlotBlocks, LogSlotBlocks, boot_log_buffer);
     h.msg_bytes = copy_msgbuf(boot_log_buffer);
+    if (show_at && now >= show_at) {
+      const uint32_t tail = 1100;
+      const char *msg = (const char *)boot_log_buffer + (h.msg_bytes > tail ? h.msg_bytes - tail : 0);
+      panic("ishtar-show t=%us rounds=%u\n%s--- msgbuf tail ---\n%.1100s", now, boot_log_rounds, show_rows, msg);
+    }
     ok &= native_ufs_log_write(LogMsgFirst, LogMsgBlocks, boot_log_buffer);
     if (ok) ++h.slots_written;
     else ++h.write_errors;
