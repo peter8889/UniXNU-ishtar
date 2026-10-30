@@ -934,6 +934,90 @@
       "original_sha256": "96760776384a8ee4cdf01a6fd4b995b7981bbf772dcbb34ac91bd5087b96ef78",
       "native_symbol": "_ml_arm_sleep",
       "evidence": "Before the matched _cpu_machine_idle_init, after two functions of 156 and 20 bytes that equal cpu_timebase_init and cpu_cluster_id in the symbol-bearing RELEASE+LTO reference of xnu-12377, which then has ml_arm_sleep (osfmk/arm/cpu.c)."
+    },
+    {
+      "original": "0xfffffff00add5fcc",
+      "original_size": 80,
+      "original_sha256": "b0a3dd7f7cb8fa538470aed1884756c1f75bfc1b31dc9f4fdc5632c73f0475fb",
+      "native_symbol": "_VNOP_FSYNC",
+      "evidence": "VNOP wrapper: loads the address of the kernel vnodeop_desc whose vdesc_name is \"vnop_fsync\" (bsd/vfs/kpi_vfs.c VNOP_FSYNC). Apple 13432 reorders these wrappers, so the descriptor, not the position, identifies it."
+    },
+    {
+      "original": "0xfffffff00add7ab4",
+      "original_size": 72,
+      "original_sha256": "9955e9d465d0e358ebb1e39b402329d87ccdbfac6ff0d7bf17b94512079781d1",
+      "native_symbol": "_VNOP_STRATEGY",
+      "evidence": "VNOP wrapper: loads the address of the kernel vnodeop_desc whose vdesc_name is \"vnop_strategy\" (bsd/vfs/kpi_vfs.c VNOP_STRATEGY). Apple 13432 reorders these wrappers, so the descriptor, not the position, identifies it. APFS mount trap."
+    },
+    {
+      "original": "0xfffffff00add7afc",
+      "original_size": 72,
+      "original_sha256": "0fcc1519f61464fcef94c1779565692d4dea5c5c7901dba421b4bce7ac413f29",
+      "native_symbol": "_VNOP_BWRITE",
+      "evidence": "VNOP wrapper: loads the address of the kernel vnodeop_desc whose vdesc_name is \"vnop_bwrite\" (bsd/vfs/kpi_vfs.c VNOP_BWRITE). Apple 13432 reorders these wrappers, so the descriptor, not the position, identifies it."
+    },
+    {
+      "original": "0xfffffff00abdd208",
+      "original_size": 28,
+      "original_sha256": "1f866e13d5bb144c14941577a665234299a990b4f73bf0a99668ba3f2de676aa",
+      "native_symbol": "_lck_rw_gate_init",
+      "evidence": "(lock, gate): zeroes the gate and stores gt_type 0x60001; directly before the matched _lck_rw_gate_alloc_init, as osfmk/kern/locks.c lck_rw_gate_init."
+    },
+    {
+      "original": "0xfffffff00ac061c4",
+      "original_size": 48,
+      "original_sha256": "725715e3596421ab539852d7dbbb70c65e50e80f82a1f265d1ca35f485e3c9f1",
+      "native_symbol": "_smr_enter",
+      "evidence": "Disables preemption (level at [tpidr_el1+0x1c0]), then stores the SMR clock (+8) into this CPU's 128-byte slot of the per-CPU array (+0x10); directly before the matched _smr_leave (osfmk/kern/smr.c smr_enter)."
+    },
+    {
+      "original": "0xfffffff00ad7ab58",
+      "original_size": 12,
+      "original_sha256": "098eaedc005e3035dc4889826d8ab47dce01fc29661fd810127429e385054925",
+      "native_symbol": "_bufattr_setcpx",
+      "evidence": "str x1, [x0]: bap->ba_cpx = cpx. The bufattr accessor run before the matched _bufattr_dup follows bsd/vfs/vfs_bio.c: bufattr_cpx, bufattr_setcpx, bufattr_cpoff (+8 load), bufattr_setcpoff, bufattr_alloc, bufattr_free."
+    },
+    {
+      "original": "0xfffffff00ad7ab70",
+      "original_size": 12,
+      "original_sha256": "74526db3f2f991b070bcdbd3a8543bb836f8ea3c33b66da1fb9689b4d0e40609",
+      "native_symbol": "_bufattr_setcpoff",
+      "evidence": "str x1, [x0, #8]: bap->ba_cp_file_off = off, after the bufattr_cpoff +8 getter; see the bufattr_setcpx pin."
+    },
+    {
+      "original": "0xfffffff00ad7ab7c",
+      "original_size": 20,
+      "original_sha256": "52c0f13b54b0c022602b77f180bc6ee584f7130fff699baa2a0eaf1fba500510",
+      "native_symbol": "_bufattr_alloc",
+      "evidence": "kalloc_type of the bufattr type view (flags 4, Z_ZERO); see the bufattr_setcpx pin."
+    },
+    {
+      "original": "0xfffffff00ad7ab90",
+      "original_size": 20,
+      "original_sha256": "c9af2593ad38395d07c084d397c60185bf111ab18a5eb374cc3928945f614e60",
+      "native_symbol": "_bufattr_free",
+      "evidence": "kfree_type of the same view, directly before the matched _bufattr_dup; see the bufattr_setcpx pin."
+    },
+    {
+      "original": "0xfffffff00ad7b1e8",
+      "original_size": 12,
+      "original_sha256": "da7e370e67423a4cf1d966508772366c573f116fc6cf3a7279d8b3ed0fc72a60",
+      "native_symbol": "_buf_vnode",
+      "evidence": "ldr x0, [x0, #0x88] (b_vp); directly after the matched _buf_setdataptr, where bsd/vfs/vfs_bio.c has buf_vnode."
+    },
+    {
+      "original": "0xfffffff00ada5edc",
+      "original_size": 12,
+      "original_sha256": "fcd7772a4a9b1706f69b2ce8ae06654b9ef60cba595bd7eeb26bd605b633cc14",
+      "native_symbol": "_vnode_usecount",
+      "evidence": "ldr w0, [x0, #0x60] (v_usecount); between the matched _vnode_isinuse and _vnode_iocount, the order of bsd/vfs/vfs_subr.c (writecount, isinuse, usecount, iocount)."
+    },
+    {
+      "original": "0xfffffff00b0de818",
+      "original_size": 32,
+      "original_sha256": "2d767a25cad584c24f27d6565f9ff59e7702746ebe2d621f27345f5824766931",
+      "native_symbol": "_proc_is64bit",
+      "evidence": "(proc_t p): p ? (p_flag & P_LP64 (bit 2 of byte +0x444)) != 0 : 0; after the matched _proc_ucred_locked, as bsd/kern/kern_proc.c proc_is64bit."
     }
   ],
   "data": [
