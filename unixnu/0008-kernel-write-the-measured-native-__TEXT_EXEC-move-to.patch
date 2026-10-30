@@ -1,0 +1,43 @@
+From b5c66901d49d40ec2c4011427ced3dccd7480531 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Fri, 30 Oct 2026 11:52:15 +0100
+Subject: [PATCH 8/8] kernel: write the measured native __TEXT_EXEC move to
+ native-slide after prelink
+
+build-gop-legacy-display-27.py and build-adreno740-accelerator.py subtract
+build/native-legacy-display/native-slide from every original binding, but
+nothing published wrote it, so a fresh tree bound them 0 instead of the
+fileset move (ishtar: first legacy display call jumped to
+IOMobileGraphicsFamily + 0x3850000, instruction fetch abort). The kernel
+step now records the move and asks for one more build when it changed.
+
+Change-Id: I72a1396ea853308362068ded5c3c85988349f403
+---
+ scripts/unixnu/kernel.py | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/scripts/unixnu/kernel.py b/scripts/unixnu/kernel.py
+index 4d5604e..7338282 100644
+--- a/scripts/unixnu/kernel.py
++++ b/scripts/unixnu/kernel.py
+@@ -298,5 +298,17 @@ def prelink(ctx):
+                 if not success:
+                     log(f'kernel: prelink failed; diagnostic record {destination}')
+         os.replace(candidate, output)
++    # The fileset emitter moves the native __TEXT_EXEC; archive builders that bind native code to original addresses
++    # (build-gop-legacy-display-27.py, build-adreno740-accelerator.py) take that move off through native-slide.
++    layout = json.loads(output.with_suffix('.json').read_text()).get('statistics', {}).get('segment_layout', {})
++    text = layout.get('__TEXT_EXEC')
++    if text:
++        slide_file = ctx.tree / 'build/native-legacy-display/native-slide'
++        moved = f"{(int(text['new'], 16) - int(text['old'], 16)) & ((1 << 64) - 1):#x}"
++        used = slide_file.read_text().strip() if slide_file.is_file() else None
++        slide_file.parent.mkdir(parents=True, exist_ok=True)
++        slide_file.write_text(moved + '\n')
++        if used != moved:
++            log(f'kernel: native slide {moved} (was {used}); rebuild the kernel once more so original bindings use it')
+     log(f'kernel: {output} sha256 {sha256_file(output)}')
+     return output
+-- 
+2.56.0
+

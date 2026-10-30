@@ -1,7 +1,7 @@
 From a22714b7780e6f2fdd7de702d63a216aa3e1564b Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Thu, 29 Oct 2026 16:43:30 +0100
-Subject: [PATCH 3/7] build: read the board package from kits/<board.kit>
+Subject: [PATCH 3/8] build: read the board package from kits/<board.kit>
 
 kernel.py exports UNIXNU_BOARD_KIT; build-sheng-source-storage.py and
 build-arm-driver.py (NativeAdreno) use it instead of the fixed kits/sheng.
