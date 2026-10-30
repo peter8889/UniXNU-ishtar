@@ -17,7 +17,7 @@ Bergamota xnu-11215). Its hardware findings carry over; its kernel patches do no
 | --- | --- |
 | UniXNU with the `ios-27.0.1-24A446` profile | `../UniXNU` = [markakash/UniXNU](https://github.com/markakash/UniXNU) `main`: `feat/ipados27-gpu-parity` (87bf1f9) + [unixnu/*.patch](unixnu/) (0004: components at the 2026-10-29 ipados27 heads) |
 | SM8550 shared support | `UniXNU-sm8550-common` 23b2049 (`feeds.toml`); SoC patches for xnu-12377 in `patches/xnu-12377/soc/` |
-| sheng device layer | copied from `UniXNU-sheng` `feat/ipados27-gpu-parity` 6ed0ba4: `patches/xnu-12377/`, `package/` (BootLog.c and BootDiagExport.c at 5b7d83c) |
+| sheng device layer | copied from `UniXNU-sheng` `feat/ipados27-gpu-parity` 6ed0ba4: `patches/xnu-12377/`, `package/` (BootLog.c at 9476d49, BootDiagExport.c at 5b7d83c) |
 | iOS | iPhone17,2 27.0.1 24A446 IPSW (URL and pins in the profile) |
 | Firmware | `../uefi-ishtar` = UniXNU `uefi-sheng` 20ac23d + [firmware/](firmware/) (`ishtarPkg`); stock DTB/DTBO from AOSPA `android_device_xiaomi_ishtar-kernel` |
 

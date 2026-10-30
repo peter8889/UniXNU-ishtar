@@ -1,0 +1,37 @@
+From e4dcfbe0e3c7a911299f12e4de3ea45fd7713d6a Mon Sep 17 00:00:00 2001
+From: rpone <rponeawa@qq.com>
+Date: Fri, 30 Oct 2026 21:53:02 +0800
+Subject: [PATCH 14/15] feat(sheng): module pointers for the direct scanout
+ fence wait and its diagnostics
+
+(cherry picked from commit a7c92c8cc632ea0ea0046aab93a4f117d7b7f9a6)
+---
+ drivers/Adreno740      | 2 +-
+ drivers/AdrenoMetal    | 2 +-
+ drivers/GopFramebuffer | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/Adreno740 b/drivers/Adreno740
+index c0a2f39..7cbe6e0 160000
+--- a/drivers/Adreno740
++++ b/drivers/Adreno740
+@@ -1 +1 @@
+-Subproject commit c0a2f392a49b7363b26811189cb62d7d0f9e4b8a
++Subproject commit 7cbe6e04bfe25c4aeb6cbda6605bbbbdfc073e73
+diff --git a/drivers/AdrenoMetal b/drivers/AdrenoMetal
+index 278333f..8c7297e 160000
+--- a/drivers/AdrenoMetal
++++ b/drivers/AdrenoMetal
+@@ -1 +1 @@
+-Subproject commit 278333f4a5c8c026dec8e8c277c741c0d909cc77
++Subproject commit 8c7297ed5df3db6fcfb017aa1008e8c7b48fc718
+diff --git a/drivers/GopFramebuffer b/drivers/GopFramebuffer
+index 4975bc8..ff091ad 160000
+--- a/drivers/GopFramebuffer
++++ b/drivers/GopFramebuffer
+@@ -1 +1 @@
+-Subproject commit 4975bc84eb87e16d629125dcffb30cc30dfd2d86
++Subproject commit ff091adfbd747428a2b6fd4dfc68cc381cde5020
+-- 
+2.39.5 (Apple Git-154)
+

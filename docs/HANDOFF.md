@@ -79,7 +79,7 @@ git clone https://github.com/markakash/UniXNU UniXNU
 git -C UniXNU remote add upstream https://github.com/UniXNU/UniXNU && git -C UniXNU fetch upstream
 # 3. References
 git clone https://github.com/UniXNU/UniXNU-sm8550-common                                   # 23b2049
-git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from, BootLog.c/BootDiagExport.c 5b7d83c
+git clone -b feat/ipados27-gpu-parity https://github.com/UniXNU/UniXNU-sheng               # 6ed0ba4 copied from, BootLog.c 9476d49, BootDiagExport.c 5b7d83c
 git clone https://github.com/markakash/UniXNU-ishtar-old ishtar                                # old iOS 18 port, 79ddf457
 git clone --depth 1 -b vauxite https://github.com/AOSPA/android_device_xiaomi_ishtar-kernel # stock dtbs/
 git clone --filter=blob:none https://github.com/apple-oss-distributions/xnu ref-src/xnu-12377 \

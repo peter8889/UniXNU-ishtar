@@ -1,7 +1,7 @@
 From f8ae7a73bcdbd2baefdd9f60d87acdeb97d0d0a0 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Fri, 30 Oct 2026 15:01:03 +0100
-Subject: [PATCH 13/13] components: follow the 2026-10-30 ipados27 pins
+Subject: [PATCH 13/15] components: follow the 2026-10-30 ipados27 pins
 
 Catalog revisions follow the driver gitlinks of upstream feat/ipados27-gpu-parity
 88604d0 and sheng 5b7d83c's ShengUfs:

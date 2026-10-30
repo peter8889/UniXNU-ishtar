@@ -1,0 +1,47 @@
+From 63f3e91b97877ddca7de8491cccd8d990a8d9d70 Mon Sep 17 00:00:00 2001
+From: Akash Srivastava <akashniki@gmail.com>
+Date: Fri, 30 Oct 2026 15:08:25 +0100
+Subject: [PATCH 15/15] components: follow upstream a7c92c8's driver pins
+
+Adreno740 7cbe6e04, AdrenoMetal 8c7297ed, GopFramebuffer ff091adf: the
+21:52 commits held back in the previous catalog update, now pinned by
+upstream together with sheng 9476d49's BootLog.c (native_legacy_direct
+grows to 38 words on both sides).
+---
+ components.toml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/components.toml b/components.toml
+index 73f562b..640b2bd 100644
+--- a/components.toml
++++ b/components.toml
+@@ -83,7 +83,7 @@ kind = "driver"
+ function = "A740 kernel GPU driver"
+ scope = "gpu"
+ repository = "https://github.com/UniXNU/Adreno740.git"
+-revision = "c0a2f392a49b7363b26811189cb62d7d0f9e4b8a"
++revision = "7cbe6e04bfe25c4aeb6cbda6605bbbbdfc073e73"
+ path = "drivers/Adreno740"
+ hardware = ["Adreno 740", "SM8550"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -105,7 +105,7 @@ kind = "driver"
+ function = "Metal frontend through metal2vulkan and Turnip"
+ scope = "graphics"
+ repository = "https://github.com/UniXNU/AdrenoMetal.git"
+-revision = "278333f4a5c8c026dec8e8c277c741c0d909cc77"
++revision = "8c7297ed5df3db6fcfb017aa1008e8c7b48fc718"
+ path = "drivers/AdrenoMetal"
+ hardware = ["Turnip Darwin backend", "kernel GPU user-client ABI"]
+ os_abi = ["ipados-17.7.11-21H461"]
+@@ -211,7 +211,7 @@ kind = "driver"
+ function = "UEFI GOP framebuffer and MobileFramebuffer integration"
+ scope = "display"
+ repository = "https://github.com/UniXNU/GopFramebuffer.git"
+-revision = "4975bc84eb87e16d629125dcffb30cc30dfd2d86"
++revision = "ff091adfbd747428a2b6fd4dfc68cc381cde5020"
+ path = "drivers/GopFramebuffer"
+ hardware = ["UEFI GOP framebuffer"]
+ os_abi = ["ipados-17.7.11-21H461", "ipados-27.0.1-24A446"]
+-- 
+2.39.5 (Apple Git-154)
+

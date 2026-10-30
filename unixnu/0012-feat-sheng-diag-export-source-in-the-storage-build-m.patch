@@ -1,7 +1,7 @@
 From 8109216399ef16168f0968ac6122b9cf0ccde2fb Mon Sep 17 00:00:00 2001
 From: rpone <rponeawa@qq.com>
 Date: Fri, 30 Oct 2026 19:34:51 +0800
-Subject: [PATCH 12/13] feat(sheng): diag export source in the storage build;
+Subject: [PATCH 12/15] feat(sheng): diag export source in the storage build;
  module pointers for the BGRA, contiguous BO and direct scanout work
 
 (cherry picked from commit 88604d01c191727bf4b4113269b3a9518bb730d3)

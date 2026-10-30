@@ -1,7 +1,7 @@
 From 802092c0f345b2051fca68b9930f8b226fbe2628 Mon Sep 17 00:00:00 2001
 From: Akash Srivastava <akashniki@gmail.com>
 Date: Fri, 30 Oct 2026 12:58:40 +0100
-Subject: [PATCH 09/13] seed-data-skip-setup: read only the superblock magic,
+Subject: [PATCH 09/15] seed-data-skip-setup: read only the superblock magic,
  not the whole raw seed
 
 raw.read_bytes() loaded the expanded seed into memory to check four bytes;

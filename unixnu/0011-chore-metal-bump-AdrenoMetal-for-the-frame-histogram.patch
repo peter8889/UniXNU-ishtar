@@ -1,7 +1,7 @@
 From 6b196008c8ab193a9829e1129b2d54073192e732 Mon Sep 17 00:00:00 2001
 From: rpone <rponeawa@qq.com>
 Date: Fri, 30 Oct 2026 11:05:42 +0800
-Subject: [PATCH 11/13] chore(metal): bump AdrenoMetal for the frame histograms
+Subject: [PATCH 11/15] chore(metal): bump AdrenoMetal for the frame histograms
  and per-function priming
 
 (cherry picked from commit 310fb75edd53fff5f432066d858dd0ae9403a521)

@@ -1,7 +1,7 @@
 From ef3f720319e6eb4ee141c800ad3bad394a904672 Mon Sep 17 00:00:00 2001
 From: bluseliu50 <265648257+bluseliu50@users.noreply.github.com>
 Date: Fri, 30 Oct 2026 05:10:44 +0800
-Subject: [PATCH 10/13] build: add the fileset reference, trust, addon and
+Subject: [PATCH 10/15] build: add the fileset reference, trust, addon and
  pipeline-pack tools
 
 (cherry picked from commit 9bfc45a7d77109f629eba466d343becd136188de)
