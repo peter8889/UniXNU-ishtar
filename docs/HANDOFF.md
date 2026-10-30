@@ -243,7 +243,7 @@ Record: area `storage`.
 
 ```sh
 ./unixnu build userdata --dry-run -D ../UniXNU-ishtar
-./unixnu build userdata -D ../UniXNU-ishtar
+./unixnu build userdata -D ../UniXNU-ishtar --object OS.vroot=out/ishtar/ios-27.0.1-24A446/ishtar_ios27/tree/build/verified-root-24A446/OS/hashes.bin --object SystemOS.vroot=out/ishtar/ios-27.0.1-24A446/ishtar_ios27/tree/build/verified-root-24A446/SystemOS/hashes.bin
 ```
 
 Check `userdata/userdata-root.json`: windows fit between `first_lba` and `last_lba`, the reserve at the end stays
