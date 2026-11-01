@@ -32,6 +32,11 @@ result = "SM8550 shared source pinned to a full commit"
 kind = "source"
 reference = "configs/gpu_defconfig"
 result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+[[area.evidence]]
+kind = "source"
+reference = "board.toml"
+result = "gpu archive plan now ends with build-gop-legacy-display.py, which compiles the kit GpuPowerProbe translation unit that defines native_gpu_dcvs for the Adreno740 link."
+
 
 
 [[area]]
