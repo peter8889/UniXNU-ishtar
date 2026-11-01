@@ -7,14 +7,36 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
-pins = json.loads((ROOT / 'docs/adreno-inputs.json').read_text())
-tree = ROOT / '.cache/linux-dts'
+
+
+def _first(candidates, marker):
+    for base in candidates:
+        try:
+            if (base / marker).exists():
+                return base
+        except OSError:
+            continue
+    return None
+
+
+# kits/sheng is a symlink to the device package directory in the assembled tree, so
+# parents[2] can land on a directory that holds neither the pins nor the Linux DTS
+# cache. Look for both next to the checkout and inside the assembled tree.
+_bases = [ROOT]
+for pattern in ('UniXNU/out/*/*/gpu/tree', 'UniXNU/out/*/tree', 'out/*/*/gpu/tree'):
+    _bases.extend(sorted(ROOT.glob(pattern)))
+TREE_ROOT = _first(_bases, '.cache/linux-dts')
+DOCS_ROOT = _first(_bases, 'docs/adreno-inputs.json') or TREE_ROOT
+if TREE_ROOT is None or DOCS_ROOT is None:
+    raise SystemExit('adreno inputs: no .cache/linux-dts or docs/adreno-inputs.json near ' + str(ROOT))
+pins = json.loads((DOCS_ROOT / 'docs/adreno-inputs.json').read_text())
+tree = TREE_ROOT / '.cache/linux-dts'
 for name, expected in pins['board']['sha256'].items():
     path = tree / name
     data = path.readlink().as_posix().encode() if path.is_symlink() else path.read_bytes()
     if hashlib.sha256(data).hexdigest() != expected:
         raise SystemExit('Pinned board source differs: ' + name)
-output = ROOT / 'build/adreno-firmware'
+output = TREE_ROOT / 'build/adreno-firmware'
 output.mkdir(parents=True, exist_ok=True)
 preprocessed = output / 'sheng.preprocessed.dts'
 with preprocessed.open('w') as stream:
