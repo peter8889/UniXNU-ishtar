@@ -25,12 +25,14 @@ def _first(candidates, marker):
 _bases = [ROOT]
 for pattern in ('UniXNU/out/*/*/gpu/tree', 'UniXNU/out/*/tree', 'out/*/*/gpu/tree'):
     _bases.extend(sorted(ROOT.glob(pattern)))
-TREE_ROOT = _first(_bases, '.cache/linux-dts')
+DTS_ROOT = _first(_bases, '.cache/linux-dts')
+ADRENO_ROOT = _first(_bases, '.cache/adreno-source') or DTS_ROOT
+TREE_ROOT = DTS_ROOT
 DOCS_ROOT = _first(_bases, 'docs/adreno-inputs.json') or TREE_ROOT
-if TREE_ROOT is None or DOCS_ROOT is None:
+if DTS_ROOT is None or DOCS_ROOT is None:
     raise SystemExit('adreno inputs: no .cache/linux-dts or docs/adreno-inputs.json near ' + str(ROOT))
 pins = json.loads((DOCS_ROOT / 'docs/adreno-inputs.json').read_text())
-tree = TREE_ROOT / '.cache/linux-dts'
+tree = DTS_ROOT / '.cache/linux-dts'
 for name, expected in pins['board']['sha256'].items():
     path = tree / name
     data = path.readlink().as_posix().encode() if path.is_symlink() else path.read_bytes()
@@ -82,7 +84,7 @@ reservation = '/reserved-memory/gpu-micro-code-region@9b09a000'
 require(cells(reservation, 'phandle') == cells(zap, 'memory-region') and
         cells(reservation, 'reg') == [0, 0x9b09a000, 0, 0x2000], 'ZAP reservation binding')
 subprocess.run(['fdtget', dtb, reservation, 'no-map'], capture_output=True, check=True)
-catalog = TREE_ROOT / '.cache/adreno-source/drivers/gpu/drm/msm/adreno/a6xx_catalog.c'
+catalog = ADRENO_ROOT / '.cache/adreno-source/drivers/gpu/drm/msm/adreno/a6xx_catalog.c'
 require(hashlib.sha256(catalog.read_bytes()).hexdigest() ==
         pins['linux']['files']['drivers/gpu/drm/msm/adreno/a6xx_catalog.c']['sha256'], 'Pinned GPU catalog identity')
 record = re.search(r'\.chip_ids = ADRENO_CHIP_IDS\(0x43050a01\)([\s\S]*?)\.preempt_record_size', catalog.read_text())
