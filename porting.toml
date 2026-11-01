@@ -44,6 +44,11 @@ result = "tools step now installs the lld-link toolchain (dtc llvm lld cmake mto
 kind = "source"
 reference = ".github/workflows/package.yml"
 result = "the ishtar device binaries are vendored in the uefi-sheng fork and installed into Binaries/ishtar before packaging, because the Binaries submodule upstream does not carry this device; the firmware build needs RawFiles/SecParti.cfg from there."
+[[area.evidence]]
+kind = "source"
+reference = ".github/workflows/package.yml"
+result = "the uefi-sheng checkout is recursive, because the firmware volume submodules are the binary modules the volume builds from (the framework template and docs say so); the ishtar Binaries set is then installed over the submodule path."
+
 
 
 

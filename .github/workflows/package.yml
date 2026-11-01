@@ -36,6 +36,7 @@ jobs:
         with:
           repository: peter8889/uefi-sheng
           path: uefi-sheng
+          submodules: recursive   # the firmware volume builds from the checkout's submodules
       # Binaries 是 Project-Silicium/Device-Binaries 子模块，上游不带 ishtar 设备；固件构建
       # 会从 Binaries/ishtar 拷贝 RawFiles 和平台包，所以把 fork 里带的副本装回去。
       - name: ishtar device binaries
