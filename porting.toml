@@ -28,6 +28,11 @@ result = "Board identity, partition geometry, archive order, firmware package, p
 kind = "source"
 reference = "feeds.toml"
 result = "SM8550 shared source pinned to a full commit"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "firmware"
@@ -64,6 +69,11 @@ next_action = ["Record per-CPU entry and the secondary-core MPIDR values on the 
 kind = "source"
 reference = "dts/ishtar.dts"
 result = "Board device tree including the shared SM8550 description"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "memory"
@@ -100,6 +110,11 @@ next_action = ["Read the UFS controller base and PHY window out of the stock ish
 kind = "source"
 reference = "board.toml"
 result = "Userdata partition geometry and the selected storage components"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "display"
@@ -154,6 +169,11 @@ next_action = ["Run the Adreno probe builders against the ishtar firmware and re
 kind = "source"
 reference = "scripts/build-adreno-link-stubs.py"
 result = "Builds the stub archive the kernel link uses while the full driver is unavailable"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "network"
@@ -208,6 +228,11 @@ next_action = ["Read the fuel gauge on the first device boot and compare it agai
 kind = "source"
 reference = "board.toml"
 result = "Power-related kernel arguments and the sleep-disabled bring-up default"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "packaging"
@@ -231,6 +256,11 @@ result = "Board kernel configuration including the extra link archive and the bo
 kind = "source"
 reference = "board.toml"
 result = "Archive plan, payload policy and boot-image device-tree overlay"
+[[area.evidence]]
+kind = "source"
+reference = "configs/gpu_defconfig"
+result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PROGRESS=n); the kernel baseline guard requires the audited native-UFS and owner-root builds, which this profile does not carry yet."
+
 
 [[area]]
 id = "diagnostics"
