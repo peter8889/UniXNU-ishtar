@@ -82,7 +82,7 @@ reservation = '/reserved-memory/gpu-micro-code-region@9b09a000'
 require(cells(reservation, 'phandle') == cells(zap, 'memory-region') and
         cells(reservation, 'reg') == [0, 0x9b09a000, 0, 0x2000], 'ZAP reservation binding')
 subprocess.run(['fdtget', dtb, reservation, 'no-map'], capture_output=True, check=True)
-catalog = ROOT / '.cache/adreno-source/drivers/gpu/drm/msm/adreno/a6xx_catalog.c'
+catalog = TREE_ROOT / '.cache/adreno-source/drivers/gpu/drm/msm/adreno/a6xx_catalog.c'
 require(hashlib.sha256(catalog.read_bytes()).hexdigest() ==
         pins['linux']['files']['drivers/gpu/drm/msm/adreno/a6xx_catalog.c']['sha256'], 'Pinned GPU catalog identity')
 record = re.search(r'\.chip_ids = ADRENO_CHIP_IDS\(0x43050a01\)([\s\S]*?)\.preempt_record_size', catalog.read_text())
