@@ -36,6 +36,14 @@ jobs:
         with:
           repository: peter8889/uefi-sheng
           path: uefi-sheng
+      # Binaries 是 Project-Silicium/Device-Binaries 子模块，上游不带 ishtar 设备；固件构建
+      # 会从 Binaries/ishtar 拷贝 RawFiles 和平台包，所以把 fork 里带的副本装回去。
+      - name: ishtar device binaries
+        run: |
+          mkdir -p uefi-sheng/Binaries/ishtar
+          cp -R uefi-sheng/ishtar-binaries/. uefi-sheng/Binaries/ishtar/
+          test -f uefi-sheng/Binaries/ishtar/RawFiles/SecParti.cfg
+          echo "SecParti.cfg present; $(ls uefi-sheng/Binaries/ishtar | tr '\n' ' ')"
       # audit-adreno-platform.py 用 __file__.parents[2] 定位 ROOT；CI 里 kits/sheng 是指向
       # device/package 的符号链接，ROOT 会落在 workdir（checkout 的上一层），所以把 pins 放过去。
       # audit-adreno-platform.py 的 ROOT 是 __file__.parents[2]；CI 里 kits/sheng 指向
