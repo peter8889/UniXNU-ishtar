@@ -36,7 +36,6 @@
   "component:Adreno740",
   "build-adreno740-kits.py",
   "build-adreno-link-stubs.py",
-  "build-gop-legacy-display.py",
   # build-adreno740-accelerator.py needs drivers/AdrenoMetal/OriginalAcceleratorABI.h (payload-stage AdrenoMetal
   # component); the kernel link has no accelerator archive variable, so it is not part of the kernel build.
 ]

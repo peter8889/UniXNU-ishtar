@@ -35,7 +35,7 @@ result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PR
 [[area.evidence]]
 kind = "source"
 reference = "board.toml"
-result = "gpu archive plan now ends with build-gop-legacy-display.py, which compiles the kit GpuPowerProbe translation unit that defines native_gpu_dcvs for the Adreno740 link."
+result = "gpu archive plan keeps build-adreno-link-stubs.py; build-gop-legacy-display.py was tried and reverted because its audit-mobile-graphics-legacy step needs the owner-root reference candidates (native-owner-*-candidate.macho) that only the audited UFS/owner-root chain produces. The GPU/display kit is tracked as its own workstream."
 
 
 
