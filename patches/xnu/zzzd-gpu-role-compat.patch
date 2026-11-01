@@ -1,18 +1,19 @@
 From: ishtar build <build@local>
-Subject: [PATCH] xnu: gpu-role compat for the Adreno740 user client
+Subject: [PATCH] xnu: gpu-role and pmap-user-mappings compat for the Adreno740 kit
 
-The Adreno740 user client calls task_get_gpu_role() and the PRIO_DARWIN_GPU_*
-role constants; this kernel generation only ships task_get_game_mode().
-Provide a thin compat accessor and the constants so the GPU kit builds.
+The Adreno740 user client calls task_get_gpu_role(), the PRIO_DARWIN_GPU_* role
+constants and native_pmap_user_mappings(); this kernel generation ships none of
+them (sheng carries the latter only in its ipados-27 bringup patch). Provide thin
+compat implementations so the GPU kit links on the iOS 17 profile.
 ---
 --- a/osfmk/kern/task.h	2026-10-27 20:04:18.497091262 +0800
-+++ b/osfmk/kern/task.h	2026-11-01 16:30:04.956274110 +0800
++++ b/osfmk/kern/task.h	2026-11-01 17:56:59.779076555 +0800
 @@ -1276,6 +1276,15 @@
  extern bool task_set_game_mode_locked(task_t task, bool enabled);
  extern bool task_get_game_mode(task_t task);
  
-+/* ishtar compat: Adreno740 user client expects a gpu-role accessor */
 +extern int task_get_gpu_role(task_t task);
++extern unsigned int native_pmap_user_mappings(unsigned int, void **, uint64_t *, char *);
 +
 +#ifndef PRIO_DARWIN_GPU_BACKGROUND
 +#define PRIO_DARWIN_GPU_BACKGROUND 0x10
@@ -25,8 +26,8 @@ Provide a thin compat accessor and the constants so the GPU kit builds.
  
 
 --- a/osfmk/kern/task.c	2026-10-27 20:04:18.497091262 +0800
-+++ b/osfmk/kern/task.c	2026-11-01 16:30:04.956768829 +0800
-@@ -8684,6 +8684,14 @@
++++ b/osfmk/kern/task.c	2026-11-01 17:56:59.779513350 +0800
+@@ -8684,6 +8684,27 @@
  	return task->t_flags & TF_GAME_MODE;
  }
  
@@ -38,12 +39,25 @@ Provide a thin compat accessor and the constants so the GPU kit builds.
 +	return task_get_game_mode(task) ? 1 : 0;
 +}
 +
++unsigned int
++native_pmap_user_mappings(unsigned int ppnum, void **first_pmap, uint64_t *first_va, char *first_name)
++{
++	/* ishtar compat (iOS 17): the sheng kit ships this accessor only with the
++	 * ipados-27 bringup patch. Report no tracked user mappings so the Adreno
++	 * memory release path links and stays read-only here. */
++	(void)ppnum;
++	if (first_pmap) { *first_pmap = 0; }
++	if (first_va) { *first_va = 0; }
++	if (first_name) { first_name[0] = 0; }
++	return 0;
++}
++
  
  uint64_t
  get_task_memory_region_count(task_t task)
 
 --- a/bsd/sys/resource.h	2026-10-27 20:04:18.310091145 +0800
-+++ b/bsd/sys/resource.h	2026-11-01 16:30:04.957154913 +0800
++++ b/bsd/sys/resource.h	2026-11-01 17:56:59.779987801 +0800
 @@ -117,6 +117,11 @@
  
  #define PRIO_DARWIN_GPU_ALLOW   0x1
