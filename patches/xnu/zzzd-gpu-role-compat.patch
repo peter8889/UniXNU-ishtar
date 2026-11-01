@@ -1,0 +1,58 @@
+From: ishtar build <build@local>
+Subject: [PATCH] xnu: gpu-role compat for the Adreno740 user client
+
+The Adreno740 user client calls task_get_gpu_role() and the PRIO_DARWIN_GPU_*
+role constants; this kernel generation only ships task_get_game_mode().
+Provide a thin compat accessor and the constants so the GPU kit builds.
+---
+--- a/osfmk/kern/task.h	2026-10-27 20:04:18.497091262 +0800
++++ b/osfmk/kern/task.h	2026-11-01 16:30:04.956274110 +0800
+@@ -1276,6 +1276,15 @@
+ extern bool task_set_game_mode_locked(task_t task, bool enabled);
+ extern bool task_get_game_mode(task_t task);
+ 
++/* ishtar compat: Adreno740 user client expects a gpu-role accessor */
++extern int task_get_gpu_role(task_t task);
++
++#ifndef PRIO_DARWIN_GPU_BACKGROUND
++#define PRIO_DARWIN_GPU_BACKGROUND 0x10
++#define PRIO_DARWIN_GPU_UTILITY    0x20
++#define PRIO_DARWIN_GPU_FOREGROUND 0x40
++#endif
++
+ extern queue_head_t * task_io_user_clients(task_t task);
+ extern void     task_set_message_app_suspended(task_t task, boolean_t enable);
+ 
+
+--- a/osfmk/kern/task.c	2026-10-27 20:04:18.497091262 +0800
++++ b/osfmk/kern/task.c	2026-11-01 16:30:04.956768829 +0800
+@@ -8684,6 +8684,14 @@
+ 	return task->t_flags & TF_GAME_MODE;
+ }
+ 
++int
++task_get_gpu_role(task_t task)
++{
++	/* ishtar compat: map the gpu role onto game mode; the Adreno user client
++	 * only compares it against PRIO_DARWIN_GPU_BACKGROUND/UTILITY. */
++	return task_get_game_mode(task) ? 1 : 0;
++}
++
+ 
+ uint64_t
+ get_task_memory_region_count(task_t task)
+
+--- a/bsd/sys/resource.h	2026-10-27 20:04:18.310091145 +0800
++++ b/bsd/sys/resource.h	2026-11-01 16:30:04.957154913 +0800
+@@ -117,6 +117,11 @@
+ 
+ #define PRIO_DARWIN_GPU_ALLOW   0x1
+ #define PRIO_DARWIN_GPU_DENY    0x2
++#ifndef PRIO_DARWIN_GPU_BACKGROUND
++#define PRIO_DARWIN_GPU_BACKGROUND 0x10
++#define PRIO_DARWIN_GPU_UTILITY    0x20
++#define PRIO_DARWIN_GPU_FOREGROUND 0x40
++#endif
+ 
+ #define PRIO_DARWIN_ROLE        6               /* Second argument is a PID */
+ 
