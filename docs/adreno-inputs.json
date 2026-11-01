@@ -1,0 +1,181 @@
+{
+  "linux": {
+    "repository": "https://github.com/ianchb/sm8550-mainline",
+    "commit": "42f3b40c702abbc37c3a04c95af008cd283aeaf3",
+    "files": {
+      "drivers/gpu/drm/msm/adreno/a6xx_catalog.c": {
+        "bytes": 94030,
+        "sha256": "ff1abc1b7735d6bd6aa07d5df776e2549be2ee70ffcc02ff24aac646dfd6a3c7"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_gpu.c": {
+        "bytes": 87372,
+        "sha256": "833ec17decd679d0ae7738fa71843e009cb33012e138071cb7bb2c1a42ffe6d1"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_gmu.c": {
+        "bytes": 68256,
+        "sha256": "0e9080435b24841812d1b153960d0a04c3ae4f5eea9a76e1b4ff64d7bd4a53ac"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_gmu.h": {
+        "bytes": 6500,
+        "sha256": "cfc3372ee52b9aac1cee1818a1f4d6fdd5e5bc7e091bf500422a70f834648b02"
+      },
+      "drivers/gpu/drm/msm/adreno/adreno_gpu.h": {
+        "bytes": 19977,
+        "sha256": "1de7a71a8fddef587ee06c960853a636ddde5550c65174b50ae0556c49de4f96"
+      },
+      "drivers/gpu/drm/msm/msm_iommu.c": {
+        "bytes": 21200,
+        "sha256": "bf3440df65d49e2f81102f5825ee37b79c0cd99973d6e8e5509c62b1f6403dbe"
+      },
+      "drivers/gpu/drm/msm/registers/adreno/adreno_pm4.xml": {
+        "bytes": 94755,
+        "sha256": "f8137e5d31a3cfce27cba0a8bc269e460067dca9ccb95e620404b7fc752913fb"
+      },
+      "drivers/gpu/drm/msm/registers/adreno/a6xx.xml": {
+        "bytes": 279250,
+        "sha256": "1776505dbdb01d0355c9a828b857eaec61b286802d3509a33d6ced9e6ce54000"
+      },
+      "drivers/iommu/io-pgtable-arm.c": {
+        "bytes": 35755,
+        "sha256": "41885615ee42cadf527eda2be1066f9dbf8ee60e3d6f1d96f11a639886d4255e"
+      },
+      "drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c": {
+        "bytes": 27098,
+        "sha256": "ab248190c83bc5af9a1526a88a6bc4ecb9adf88cf1fb9faa601aa3bd96e03254"
+      },
+      "drivers/iommu/arm/arm-smmu/arm-smmu.c": {
+        "bytes": 67881,
+        "sha256": "580bcc9326837da0607e45843f4906694c28a0a5b68ca9297bc516747704d55f"
+      },
+      "drivers/iommu/arm/arm-smmu/arm-smmu.h": {
+        "bytes": 16885,
+        "sha256": "b7221ee9b767594ba79cfc139fca838236f81ba949fb5e0be81e31ef42b1911c"
+      },
+      "include/linux/io-pgtable.h": {
+        "bytes": 11093,
+        "sha256": "360318641218b27728313dfa1beadf5e9ce8671f6e3223104113e16db6aef0ec"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_hfi.c": {
+        "bytes": 29471,
+        "sha256": "3a545bcb6baf2505384b5cfd2e32464e5b8de04686af51d77a00917bb7d5343d"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_hfi.h": {
+        "bytes": 7262,
+        "sha256": "4b119ad717b0bf1e9d7914ea153f2a97f5078719cfa5d998eb6d5a018f0b9d21"
+      },
+      "drivers/gpu/drm/msm/registers/adreno/a6xx_gmu.xml": {
+        "bytes": 14766,
+        "sha256": "9c97dfd68dcc47d8bc959baff0d4ae313ba2802ad2a37a9d4d54fc910dd5cf6a"
+      },
+      "drivers/gpu/drm/msm/adreno/a6xx_gpu.h": {
+        "bytes": 10914,
+        "sha256": "d37cbe3919f9d31b217d21a5a1985c3fded2534bb762c407a541fce465c85be5"
+      },
+      "include/soc/qcom/tcs.h": {
+        "bytes": 2561,
+        "sha256": "b9a98df8b595dbfb5b19317ec43e99f21b60bf92b118264a297310f9af35f169"
+      },
+      "drivers/soc/qcom/cmd-db.c": {
+        "bytes": 9682,
+        "sha256": "e6082231f11d6e85f663840ea40d4fdba36d41b76683fcdabadd002681f92f2f"
+      },
+      "include/soc/qcom/cmd-db.h": {
+        "bytes": 1321,
+        "sha256": "5fbe09d09bd9e892079340672a61148b46b1d5319ac1665bce4c3b85beefee56"
+      },
+      "drivers/gpu/drm/msm/msm_gem.c": {
+        "bytes": 33188,
+        "sha256": "49b304a0602361647d9cd86acc5b798b93bfcb2c275fa88e4b0eb05eb0290b53"
+      },
+      "drivers/gpu/drm/msm/msm_gem_vma.c": {
+        "bytes": 39253,
+        "sha256": "6cdfc355164c073783c78680177a2c2edb0ad8f7b2bdf36cf1e4c849ac509513"
+      },
+      "include/linux/iommu.h": {
+        "bytes": 58206,
+        "sha256": "ce6d31c2ff1a32ce5678d934519659a7c8d1233186c444c2804eefb73a342ad9"
+      },
+      "drivers/gpu/drm/msm/registers/adreno/adreno_common.xml": {
+        "bytes": 17188,
+        "sha256": "f898e4eee3de5f92d25597f003e5550a24fe50552d25555d6916dcd1b922d6f6"
+      }
+    }
+  },
+  "firmware": {
+    "repository": "https://github.com/ianchb/sheng-firmware",
+    "tree_sha": "2c1e2729a085c7f0470c855d236e49455c4601f0",
+    "files": {
+      "qcom/a740_sqe.fw": {
+        "bytes": 75380,
+        "git_blob_sha1": "ac5758bb97c70c0d8d401cd46530456ff9eb3607",
+        "sha256": "6d38046654333a6a5a4ee77ab67abc24e3c0c5c68237513afe98e94da8fc9fcc"
+      },
+      "qcom/gmu_gen70200.bin": {
+        "bytes": 66844,
+        "git_blob_sha1": "b78e121bd9cdcf023b41aa34f32b2f9d44a16fba",
+        "sha256": "1a2a419c39046d3141fc5fed5aa7f971de2db40cc7a1d89693c3e26fad64dd98"
+      },
+      "qcom/sm8550/sheng/a740_zap.mbn": {
+        "bytes": 12088,
+        "git_blob_sha1": "e2ee80d3af1b174fd32c1ff5c169aa9598fba0bd",
+        "sha256": "4fd56fefa82c82a677b6ce09f24368cba47ed1b110d38860196787fb85cc17b4"
+      }
+    }
+  },
+  "board": {
+    "repository": "https://github.com/ianchb/sm8550-mainline",
+    "commit": "42f3b40c702abbc37c3a04c95af008cd283aeaf3",
+    "sha256": {
+      "arch/arm64/boot/dts/qcom/sm8550-xiaomi-sheng.dts": "ad5b13d3e9653afeab728b82fe398278cc5ade3833711edfe3b17206b03d0343",
+      "arch/arm64/boot/dts/qcom/pm8010.dtsi": "003299da6f1bfb99b64e7ddbc3169fee5e7bce4e3d34da2edfd0a1069db775a1",
+      "arch/arm64/boot/dts/qcom/pm8550.dtsi": "9ebe9d8795e65afb63be042c66c073a3908f2799604e1d38bf8477a1e3a32c67",
+      "arch/arm64/boot/dts/qcom/pm8550b.dtsi": "0dd5dc3e977867dda54cf1b93d5c2f72d02a031728daa6f8988d5762a5dcbfbf",
+      "arch/arm64/boot/dts/qcom/pm8550ve.dtsi": "b3080a2cf60cbc9b0ca7550ab77e42176f7a1f1fbc25b4cabca1929d747ec68e",
+      "arch/arm64/boot/dts/qcom/pm8550vs.dtsi": "b35b6943cebd1734b62fd260d291612e60c425e3620f1f8502cec2eabc71be7e",
+      "arch/arm64/boot/dts/qcom/pmk8550.dtsi": "ae86abe21a618871493f5775be901a9a5094a68b819924196aa144d634515222",
+      "arch/arm64/boot/dts/qcom/sm8550.dtsi": "a7123ec022f1957144ffb857d7e5e1e7cdc3b136731b1536a1c9800f865752df",
+      "include/dt-bindings/arm/qcom,ids.h": "f823babc5856936421d340c57244ad154cdc161100482e50badec3f441112311",
+      "include/dt-bindings/leds/common.h": "7bb837c9ecda0e57f3ed0ca64e7ade99d9e8a12d947e1971887a163f5edd0977",
+      "include/dt-bindings/regulator/qcom,rpmh-regulator.h": "9024ec736a8bca4cc31d414ea2978b237ac6c4ff0409988f8434147a29ecd622",
+      "include/dt-bindings/clock/qcom,dsi-phy-28nm.h": "c381a37550a6bdbfd8e91abc832ac701113e1036769636513a6f79f2ae7882c7",
+      "include/dt-bindings/clock/qcom,rpmh.h": "4a8c6b677a8367fcdfb11ec7c0f1371e30fb84e40917846aefe72272bb37c1b3",
+      "include/dt-bindings/clock/qcom,sm8450-videocc.h": "932b5c549eef730bdeced42db44d3989ca5d81f2c12d8ff0cd7f924c3a43d4a5",
+      "include/dt-bindings/clock/qcom,sm8550-camcc.h": "1a125568ce919872a6ea2c90b3b6a245b2c6fa1a99f353af242692ec9e2657ac",
+      "include/dt-bindings/clock/qcom,sm8550-dispcc.h": "e1bbaa55c804da79802e026538aa3fc8dd92f653ccec420400afc775e80567eb",
+      "include/dt-bindings/clock/qcom,sm8550-gcc.h": "a032798af74edfbc6ccc97c8b1c05bbd11b1f0b2adf88fee20ee1339105074a2",
+      "include/dt-bindings/clock/qcom,sm8550-gpucc.h": "4a45ee34493f65eb19ee3c6f569314a970e1af0edd35e3b8df14ea1affb30352",
+      "include/dt-bindings/clock/qcom,sm8550-tcsr.h": "669af543d725b3753feba1120c43623c5d3ca93e061ccc40ddc1b6f62e92b242",
+      "include/dt-bindings/dma/qcom-gpi.h": "48ac66eaca32d879886630dbc64bf21b49c90a921a92b1c86f6f899f8d0bd022",
+      "include/dt-bindings/firmware/qcom,scm.h": "9bfa94b6a843474c98e9b77c36e42242fdca6f64d2833d04b2b07e2f1ea32df8",
+      "include/dt-bindings/gpio/gpio.h": "5423b3866877ead0920ec978b5b072f06087443033a72445b39faed8f288ddc1",
+      "include/dt-bindings/input/input.h": "2f7ae2ec64f1b033e9c3d34d9128c0851f86cfffa010a890b46ac49aae4f17ea",
+      "include/dt-bindings/input/linux-event-codes.h": "7a4b0eb4821228c164381b743ae67442fad85651359c2470eda69e5aedd398ad",
+      "include/dt-bindings/interconnect/qcom,icc.h": "8b60d3df840dc950875db2e505c39a2ffee17ac2edb3b87568f77c760da39ecb",
+      "include/dt-bindings/interconnect/qcom,osm-l3.h": "c629c23fd20b52937adfde32d902d3cdd580e4edc63e7319c282e14ee0a01eb8",
+      "include/dt-bindings/interconnect/qcom,sm8550-rpmh.h": "430ed1404133a2f009ec039489d7eb439a6c46acfb4819d124bf47799eaa3b94",
+      "include/dt-bindings/interrupt-controller/arm-gic.h": "80dc56e8aa61b3681ee42fb0bfd34bf35ea2578ac6d82f1fa972b963667e8ff7",
+      "include/dt-bindings/interrupt-controller/irq.h": "392400a309a54ea5b1a2ac2e52773d3ab68e07323109b9aed88a69fedc74e082",
+      "include/dt-bindings/mailbox/qcom-ipcc.h": "e49a0b0731c1a56fea0ad82863e1daa905fad71c5d5780c11976f097d485b677",
+      "include/dt-bindings/phy/phy-qcom-qmp.h": "98993f931712dae608075c60149f7fec21405dda335bae06dcf3f448598bb995",
+      "include/dt-bindings/power/qcom,rpmhpd.h": "cef4d459df9c1ba1b12ba90571efd503199b0d3b8e08cfc1959bd49878eee309",
+      "include/dt-bindings/power/qcom-rpmpd.h": "fd0f3806f6e147c19b4e25a59214bbc0c24b65a13d58750119c985cba47c6d33",
+      "include/dt-bindings/soc/qcom,gpr.h": "b9addff68ed701eecff494348be58a5a78b8243686ef7824adcf671a4909421e",
+      "include/dt-bindings/soc/qcom,rpmh-rsc.h": "d57710164c227cf9d080d2885c44fe75a51cdc1b81ffd6aa27fc6ae0b70c1b73",
+      "include/dt-bindings/sound/qcom,q6dsp-lpass-ports.h": "3916d784ef3ec0fcd26d4d661debf104cd2f7976f2c0f08d519bab1731f58c35",
+      "include/dt-bindings/spmi/spmi.h": "c2952b040e5c24726c423e52ba939d389141ff27eb2307fb3888657b455e2b9b",
+      "include/dt-bindings/thermal/thermal.h": "d74d498871c3bf3d6aa985ad01c15dfa916614369dbcd832bdcb9d2d45b15e08",
+      "include/uapi/linux/input-event-codes.h": "0aa175af6b02a096e7dc172bd31e81d499eba9083777515e8c20aa915ab79dec"
+    }
+  },
+  "mesa": {
+    "repository": "https://gitlab.freedesktop.org/mesa/mesa",
+    "mirror": "https://chromium.googlesource.com/external/gitlab.freedesktop.org/mesa/mesa",
+    "commit": "85fda3b36405bcaea8bffc64aa4f2651dc90770d",
+    "files": {
+      "src/freedreno/common/freedreno_pm4.h": {
+        "bytes": 3739,
+        "sha256": "70b5e5f6f1ee45c3bed27d08ad1a798cb2f8662a76b32e47c0907e08aea26258"
+      }
+    }
+  }
+}

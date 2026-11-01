@@ -36,6 +36,13 @@ jobs:
         with:
           repository: peter8889/uefi-sheng
           path: uefi-sheng
+      # audit-adreno-platform.py 用 __file__.parents[2] 定位 ROOT；CI 里 kits/sheng 是指向
+      # device/package 的符号链接，ROOT 会落在 workdir（checkout 的上一层），所以把 pins 放过去。
+      - name: adreno pins
+        run: |
+          mkdir -p "$(dirname "$GITHUB_WORKSPACE")/docs"
+          cp device/docs/adreno-inputs.json "$(dirname "$GITHUB_WORKSPACE")/docs/adreno-inputs.json"
+          ls -l "$(dirname "$GITHUB_WORKSPACE")/docs/"
       - name: tools
         run: brew install dtc llvm
       - name: platform seed
