@@ -48,6 +48,13 @@ STUBS.write_text(''.join([
     '_native_gop_handoff_memory:\n',
     '    mov x0, #0\n',
     '    ret\n',
+    # volatile uint32_t native_gpu_dcvs[15]: the kit GpuPowerProbe translation unit
+    # normally defines it; the gpu profile links without it, so give zeroed storage.
+    '.data\n',
+    '.globl _native_gpu_dcvs\n',
+    '.p2align 4\n',
+    '_native_gpu_dcvs:\n',
+    '.zero 60\n',
 ]))
 obj = OUT / 'adreno-link-stubs.o'
 subprocess.run(['xcrun', 'clang', '-target', 'arm64-apple-ios17.0', '-Wno-incompatible-sysroot',
@@ -58,6 +65,8 @@ subprocess.run(['xcrun', 'ar', 'rcs', archive, obj], check=True)
 defined = subprocess.run(['xcrun', 'nm', '-g', archive], capture_output=True, text=True).stdout
 missing = [name for name in ('_native_gop_handoff_call', '_native_gop_handoff_memory',
                              '_boot_log_export_put') if (' T ' + name) not in defined]
+if '_native_gpu_dcvs' not in defined:
+    missing.append('_native_gpu_dcvs')
 if missing:
     raise SystemExit('Stub definitions absent: ' + ', '.join(missing))
 print('PASS: 3 returning display/boot-log stubs archived; remove once the display ABI is qualified')
