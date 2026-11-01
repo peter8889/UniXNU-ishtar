@@ -1,0 +1,65 @@
+name: package
+
+# scripts/package.sh 在 macOS runner 上跑：UniXNU 与本仓库的 uefi-sheng 检出放在 board.toml 指定的兄弟目录。
+# 平台种子来自仓库 secret UNIXNU_UNIQUE_CHIP_ID，会被烘进镜像，所以产物只属于一台设备：下载后请删除该次运行。
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "OS profile of the images"
+        type: string
+        default: "ipados-17.7.11-21H461"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: device
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          path: UniXNU
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: peter8889/uefi-sheng
+          path: uefi-sheng
+      - name: tools
+        run: brew install dtc llvm
+      - name: platform seed
+        env:
+          seed: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+        run: |
+          if ! [[ "$seed" =~ ^[0-9a-fA-F]{16}$ ]]; then
+            echo 'Set the repository secret UNIXNU_UNIQUE_CHIP_ID: the platform seed of the device, 16 hex digits.' >&2
+            exit 1
+          fi
+      - name: package
+        working-directory: device
+        env:
+          UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: scripts/package.sh --os "${{ inputs.os }}" --uefi ../uefi-sheng
+      - name: images
+        uses: actions/upload-artifact@v4
+        with:
+          name: images-ishtar
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            UniXNU/out/ishtar/*/*/boot/boot.img
+            UniXNU/out/ishtar/*/*/payload/payload.img
+            UniXNU/out/ishtar/*/*/kernel/kernel.macho
+            UniXNU/out/ishtar/*/*/package.manifest.json

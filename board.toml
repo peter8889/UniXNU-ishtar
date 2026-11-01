@@ -133,3 +133,11 @@
 
 ["adt"."buttons"."u32"]
 "home-button-type" = 2
+
+
+["package"]
+# 一键打包脚本（scripts/package.sh）读它来定位 UniXNU 检出；CI 里 UniXNU 检出在兄弟目录。
+"unixnu" = "../UniXNU"
+
+["package"."defconfig"]
+"ipados-17.7.11-21H461" = "gpu_defconfig"
