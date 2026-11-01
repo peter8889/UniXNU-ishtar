@@ -52,6 +52,11 @@ result = "the uefi-sheng checkout is recursive, because the firmware volume subm
 kind = "source"
 reference = "board.toml"
 result = "bootimg.dtb names ../device-tree/hardware.dtb relative to the tree, which is where the dts build writes it; the release flow passes it to bootimg, which otherwise fails with device tree (--dtb) not found."
+[[area.evidence]]
+kind = "source"
+reference = ".github/workflows/package.yml"
+result = "the images leave the runner encrypted: a random AES-256 key encrypts the tar, and RSA-OAEP to ci/boot-image-recipient.pem protects the key, because the images carry the prelinked Apple kernelcache."
+
 
 
 

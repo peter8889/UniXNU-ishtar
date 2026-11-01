@@ -81,14 +81,36 @@ jobs:
           UNIXNU_UNIQUE_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
           GITHUB_TOKEN: ${{ github.token }}
         run: scripts/package.sh --os "${{ inputs.os }}" --uefi ../uefi-sheng
+      - name: encrypt images
+        # The images carry the prelinked Apple kernelcache, so they only leave the runner
+        # encrypted to the owner key in device/ci/boot-image-recipient.pem.
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/encrypted"
+          plain="$RUNNER_TEMP/plain"
+          mkdir -p "$stage" "$plain"
+          for f in UniXNU/out/ishtar/*/*/boot/boot.img \
+                   UniXNU/out/ishtar/*/*/payload/payload.img \
+                   UniXNU/out/ishtar/*/*/kernel/kernel.macho \
+                   UniXNU/out/ishtar/*/*/package.manifest.json; do
+            [ -f "$f" ] && cp "$f" "$plain/"
+          done
+          test -n "$(ls -A "$plain")"
+          tar -C "$plain" -czf "$stage/images.tar.gz" .
+          OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
+          "$OPENSSL" rand -hex 32 > "$stage/boot.key"
+          "$OPENSSL" enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in "$stage/images.tar.gz" -out "$stage/images.tar.gz.enc" -pass file:"$stage/boot.key"
+          "$OPENSSL" pkeyutl -encrypt -pubin -inkey device/ci/boot-image-recipient.pem \
+            -pkeyopt rsa_padding_mode:oaep -pkeyopt rsa_oaep_md:sha256 \
+            -in "$stage/boot.key" -out "$stage/boot.key.enc"
+          rm -f "$stage/boot.key" "$stage/images.tar.gz"
+          ( cd "$stage" && shasum -a 256 images.tar.gz.enc > images.tar.gz.enc.sha256 )
+          ls -l "$stage"
       - name: images
         uses: actions/upload-artifact@v4
         with:
-          name: images-ishtar
+          name: images-ishtar-encrypted
           retention-days: 1
           if-no-files-found: error
-          path: |
-            UniXNU/out/ishtar/*/*/boot/boot.img
-            UniXNU/out/ishtar/*/*/payload/payload.img
-            UniXNU/out/ishtar/*/*/kernel/kernel.macho
-            UniXNU/out/ishtar/*/*/package.manifest.json
+          path: ${{ runner.temp }}/encrypted/*
