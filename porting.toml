@@ -36,6 +36,11 @@ result = "gpu profile builds without the boot-progress layer (CONFIG_XNU_BOOT_PR
 kind = "source"
 reference = "board.toml"
 result = "gpu archive plan keeps build-adreno-link-stubs.py; build-gop-legacy-display.py was tried and reverted because its audit-mobile-graphics-legacy step needs the owner-root reference candidates (native-owner-*-candidate.macho) that only the audited UFS/owner-root chain produces. The GPU/display kit is tracked as its own workstream."
+[[area.evidence]]
+kind = "source"
+reference = ".github/workflows/package.yml"
+result = "tools step now installs the lld-link toolchain (dtc llvm lld cmake mtools ipsw) with a fail-fast check, matching the upstream packaging template; the kernel link needs lld-link on the macOS runner."
+
 
 
 
