@@ -48,6 +48,11 @@ result = "the ishtar device binaries are vendored in the uefi-sheng fork and ins
 kind = "source"
 reference = ".github/workflows/package.yml"
 result = "the uefi-sheng checkout is recursive, because the firmware volume submodules are the binary modules the volume builds from (the framework template and docs say so); the ishtar Binaries set is then installed over the submodule path."
+[[area.evidence]]
+kind = "source"
+reference = "board.toml"
+result = "bootimg.dtb names ../device-tree/hardware.dtb relative to the tree, which is where the dts build writes it; the release flow passes it to bootimg, which otherwise fails with device tree (--dtb) not found."
+
 
 
 

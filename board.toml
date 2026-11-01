@@ -79,6 +79,7 @@
 
 
 ["bootimg"]
+"dtb" = "../device-tree/hardware.dtb"   # the dts build writes it next to the tree
 "dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xb8000000", "0x0", "0x2b00000"] }] }]
 
 
