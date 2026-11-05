@@ -68,7 +68,7 @@
 # sheng-data-persist=2 opens the Data store window for writes (without it RamBlock never attaches the store and every Data
 # write is refused: "disk2: device is not ready", 2026-10-30). Stage 1 adds sheng's display arguments (no touch, HID or buttons yet) with UI scale 3: 1440x3200 pixels are 480x1066 points,
 # near the iPhone 16 Pro Max's 440x956 @3x (sheng uses 2 on its tablet).
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "-no_slto_panic", "use_contiguous_hint=0", "native-source-storage=1", "native-ufs-root=1", "sheng-data-persist=2", "offline-mobile-graphics-load=1", "offline-mobile-graphics-client=1", "offline-legacy-register=1", "offline-legacy-gop=1", "offline-legacy-unit-scale=3", "offline-legacy-pm=1", "offline-legacy-validate=1", "offline-legacy-transfer=1", "offline-legacy-cpu-present=1", "offline-legacy-phase=4", "offline-key-events=1", "sheng-aks=1"]
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "kt_fixed_zones=120", "-no_slto_panic", "use_contiguous_hint=0", "native-source-storage=1", "native-ufs-root=1", "sheng-data-persist=2", "offline-mobile-graphics-load=1", "offline-mobile-graphics-client=1", "offline-legacy-register=1", "offline-legacy-gop=1", "offline-legacy-unit-scale=3", "offline-legacy-pm=1", "offline-legacy-validate=1", "offline-legacy-transfer=1", "offline-legacy-cpu-present=1", "offline-legacy-phase=4", "offline-key-events=1", "sheng-aks=1", "sheng-log=1", "ishtar-show=30", "sheng-autoreset=75"]
 
 ["payload"."install"]
 "title" = "Install and boot"

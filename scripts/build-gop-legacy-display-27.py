@@ -28,10 +28,9 @@ sys.path.insert(0, str(ROOT / 'kits/XnuPrelink'))
 ABI_PATH = Path(__file__).resolve().with_name('legacy-display-24A446.json')
 abi = json.loads(ABI_PATH.read_text())
 slide = int(abi['collection_slide'], 16)
-# The fileset emitter moves the linked native kernel; references to absolute symbols move with it. The measured move of the last
-# emission (native-slide, written after each emit) is taken off every original binding so the final references land on them.
-native_slide_file = OUT / 'native-slide'
-native_slide = int(native_slide_file.read_text(), 16) if native_slide_file.exists() else 0
+# Original targets are fixed collection addresses. XnuPrelink recomputes the
+# BTI/B adapter displacement after placing native text; no prior build is needed.
+# (ishtar: native-slide compensation removed to match XnuPrelink b1888c12.)
 slots = [(int(t, 16), int(d, 16)) for t, d in abi['slots']]
 D, R = abi['display'], abi['request']
 
@@ -253,7 +252,7 @@ asm = OUT / 'original-bindings.S'
 DATA = {'__ZN25IOMobileFramebufferLegacy10gMetaClassE', '__ZTV25IOMobileFramebufferLegacy'}
 text, addresses = '.text\n.p2align 2\n', ''
 for name, va in sorted(bindings.items()):
-    target = f'{(va - native_slide) & ((1 << 64) - 1):#x}'
+    target = f'{va:#x}'
     if name in DATA:
         # Reached through GOT entries: plain pointers that the emitter does not move.
         addresses += f'.globl {name}\n.set {name}, {va:#x}\n'
@@ -291,7 +290,7 @@ def compile_cpp(src, dst, extra=()):
         elif not value.startswith('-W'):
             cmd.append(value)
         i += 1
-    cmd += ['-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter', '-Wno-unnecessary-virtual-specifier', '-Wno-c99-designator',
+    cmd += ['-Wall', '-Wextra', '-Werror', '-Wno-error=overriding-option', '-Wno-overriding-option', '-Wno-unused-parameter', '-Wno-unnecessary-virtual-specifier', '-Wno-c99-designator',
             '-Wno-reorder-init-list', '-Wno-deprecated-enum-enum-conversion', '-I', str(ROOT / '.cache/xnu-work/osfmk'), *extra]
     run(cmd, cwd=r['directory'])
 
@@ -313,7 +312,7 @@ def compile_c(src, dst, recipe='osfmk/DEVELOPMENT/startup.o.json'):
         elif not value.startswith('-W'):
             cmd.append(value)
         i += 1
-    cmd += ['-Wall', '-Wextra', '-Werror', '-mgeneral-regs-only', '-I', str(ROOT / '.cache/xnu-work/osfmk'), '-I', str(ROOT / 'kits' / KIT)]
+    cmd += ['-Wall', '-Wextra', '-Werror', '-Wno-error=overriding-option', '-Wno-overriding-option', '-mgeneral-regs-only', '-I', str(ROOT / '.cache/xnu-work/osfmk'), '-I', str(ROOT / 'kits' / KIT)]
     run(cmd, cwd=rc['directory'])
 
 
@@ -393,5 +392,5 @@ sources = [ROOT / 'drivers/GopFramebuffer/NativeLegacyDisplay.cpp', ROOT / 'driv
     source_sha256={str(p.relative_to(ROOT)): sha(p) for p in sources}, generated_abi_sha256=sha(OUT / 'OriginalLegacyFramebufferABI.h'),
     kernelcache_sha256=abi['kernelcache_sha256'], compiled_object_sha256=sha(obj), archive_sha256=sha(archive),
     bindings={n: hex(v) for n, v in bindings.items()}, virtual_entries=len(slots), owned_entries=owned,
-    inherited_native_entries=native, native_slide=hex(native_slide), original_instructions_modified=False), indent=2) + '\n')
+    inherited_native_entries=native, original_bindings='fixed-collection-addresses', original_instructions_modified=False), indent=2) + '\n')
 print(f'Built the owned Legacy backend on the iOS 27 class: {len(owned)} owned, {len(native)} native, {len(bindings)} original bindings')

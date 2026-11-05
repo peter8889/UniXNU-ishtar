@@ -1,0 +1,13 @@
+--- a/osfmk/arm/arm_init.c
++++ b/osfmk/arm/arm_init.c
+@@ -359,8 +359,8 @@
+ 
+ #if T0SZ_USER != T0SZ_BOOT
+ 	/* Final TTBR0 size before the first pointer is signed (see TCR_EL1_KVA_ENTRY). */
+-	set_tcr(TCR_EL1_KVA_ENTRY);
+-	flush_core_tlb();
++	// ishtar-fix: skipped (hangs on ishtar): set_tcr(TCR_EL1_KVA_ENTRY);
++	// ishtar-fix: skipped (hangs on ishtar): flush_core_tlb();
+ #endif /* T0SZ_USER != T0SZ_BOOT */
+ 
+ 	arm_slide_rebase_and_sign_image();

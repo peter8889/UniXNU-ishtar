@@ -14,3 +14,6 @@ zzzz-ishtar-ios27-bringup.patch
 ishtar-fileset-data-const.patch
 # Declares proc_pid for the bring-up patch's sheng-exc dump, so the RELEASE fileset reference kernel compiles.
 ishtar-release-reference.patch
+
+
+zzzt-ishtar-skip-t0sz.patch
